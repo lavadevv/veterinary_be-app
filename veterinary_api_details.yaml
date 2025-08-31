@@ -1,0 +1,2883 @@
+openapi: "3.1.0"
+info:
+  title: "veterinary_be_app API"
+  description: "veterinary_be_app API"
+  version: "1.0.0"
+servers:
+  - url: "https://veterinary_be_app"
+paths:
+  /user/:
+    put:
+      summary: "PUT user/"
+      operationId: "updateUser"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateUserRequest"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+    post:
+      summary: "POST user/"
+      operationId: "createUser"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateUserRequest"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+    get:
+      summary: "GET user/"
+      operationId: "getAllUser"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /user/{id}/avatar:
+    post:
+      summary: "POST user/{id}/avatar"
+      operationId: "uploadAvatar"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+        - name: "avatar"
+          in: "query"
+          required: true
+          schema:
+            type: "string"
+            format: "binary"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+    get:
+      summary: "GET user/{id}/avatar"
+      operationId: "getAvatar"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /user/{id}:
+    delete:
+      summary: "DELETE user/{id}"
+      operationId: "deleteUser"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+    get:
+      summary: "GET user/{id}"
+      operationId: "getUser"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /user/all:
+    delete:
+      summary: "DELETE user/all"
+      operationId: "deleteAllById"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: "array"
+              items:
+                type: "integer"
+                format: "int64"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /auth/verify-account:
+    put:
+      summary: "PUT auth/verify-account"
+      operationId: "verifyAccount"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VerifyAccountRequest"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /auth/regenerate-otp:
+    put:
+      summary: "PUT auth/regenerate-otp"
+      operationId: "regenerateOTP"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegenerateOtpRequest"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /auth/forgot-password:
+    put:
+      summary: "PUT auth/forgot-password"
+      operationId: "forgotPassword"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ForgotPasswordRequest"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /auth/profile:
+    put:
+      summary: "PUT auth/profile"
+      operationId: "updateProfile"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateProfileRequest"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+    get:
+      summary: "GET auth/profile"
+      operationId: "getProfile"
+      parameters:
+        - name: "Authorization"
+          in: "header"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /auth/login:
+    post:
+      summary: "POST auth/login"
+      operationId: "login"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LoginRequest"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /auth/register:
+    post:
+      summary: "POST auth/register"
+      operationId: "register"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RegisterRequest"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /audit/:
+    get:
+      summary: "GET audit/"
+      operationId: "getAllAuditLogs"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /audit/user/{userId}:
+    get:
+      summary: "GET audit/user/{userId}"
+      operationId: "getAllAuditLogsByUserId"
+      parameters:
+        - name: "userId"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /location/:
+    put:
+      summary: "PUT location/"
+      operationId: "updateLocation"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateLocationRequest"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+    post:
+      summary: "POST location/"
+      operationId: "createLocation"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateLocationRequest"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+    get:
+      summary: "GET location/"
+      operationId: "getAllLocation"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /location/{id}/capacity:
+    put:
+      summary: "PUT location/{id}/capacity"
+      operationId: "updateCurrentCapacity"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+        - name: "capacity"
+          in: "query"
+          required: true
+          schema:
+            type: "number"
+            format: "double"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /location/{id}/toggle-availability:
+    put:
+      summary: "PUT location/{id}/toggle-availability"
+      operationId: "toggleAvailability"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /location/{id}:
+    delete:
+      summary: "DELETE location/{id}"
+      operationId: "deleteLocation"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+    get:
+      summary: "GET location/{id}"
+      operationId: "getLocationById"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /location/batch:
+    delete:
+      summary: "DELETE location/batch"
+      operationId: "deleteMultipleLocations"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: "array"
+              items:
+                type: "integer"
+                format: "int64"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /location/code/{locationCode}:
+    get:
+      summary: "GET location/code/{locationCode}"
+      operationId: "getLocationByCode"
+      parameters:
+        - name: "locationCode"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /location/warehouse/{warehouseId}:
+    get:
+      summary: "GET location/warehouse/{warehouseId}"
+      operationId: "getLocationsByWarehouse"
+      parameters:
+        - name: "warehouseId"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /location/warehouse/{warehouseId}/available:
+    get:
+      summary: "GET location/warehouse/{warehouseId}/available"
+      operationId: "getAvailableLocationsByWarehouse"
+      parameters:
+        - name: "warehouseId"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /warehouse/{id}:
+    put:
+      summary: "PUT warehouse/{id}"
+      operationId: "updateWarehouse"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateWarehouseRequest"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+    delete:
+      summary: "DELETE warehouse/{id}"
+      operationId: "deleteWarehouse"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+    get:
+      summary: "GET warehouse/{id}"
+      operationId: "getWarehouseById"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /warehouse/{id}/toggle-status:
+    patch:
+      summary: "PATCH warehouse/{id}/toggle-status"
+      operationId: "toggleWarehouseStatus"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /warehouse:
+    post:
+      summary: "POST warehouse"
+      operationId: "createWarehouse"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateWarehouseRequest"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+    get:
+      summary: "GET warehouse"
+      operationId: "getAllWarehouses"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /warehouse/batch:
+    delete:
+      summary: "DELETE warehouse/batch"
+      operationId: "deleteWarehouses"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: "array"
+              items:
+                type: "integer"
+                format: "int64"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /warehouse/code/{warehouseCode}:
+    get:
+      summary: "GET warehouse/code/{warehouseCode}"
+      operationId: "getWarehouseByCode"
+      parameters:
+        - name: "warehouseCode"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /warehouse/active:
+    get:
+      summary: "GET warehouse/active"
+      operationId: "getAllActiveWarehouses"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /warehouse/type/{warehouseType}:
+    get:
+      summary: "GET warehouse/type/{warehouseType}"
+      operationId: "getWarehousesByType"
+      parameters:
+        - name: "warehouseType"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /material/{id}:
+    put:
+      summary: "PUT material/{id}"
+      operationId: "updateMaterial"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMaterialRequest"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+    delete:
+      summary: "DELETE material/{id}"
+      operationId: "deleteMaterial"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+    get:
+      summary: "GET material/{id}"
+      operationId: "getMaterialById"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /material/{id}/toggle-status:
+    patch:
+      summary: "PATCH material/{id}/toggle-status"
+      operationId: "toggleMaterialStatus"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /material/{id}/update-stock:
+    patch:
+      summary: "PATCH material/{id}/update-stock"
+      operationId: "updateStock"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+        - name: "newStock"
+          in: "query"
+          required: true
+          schema:
+            type: "number"
+            format: "double"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /material:
+    post:
+      summary: "POST material"
+      operationId: "createMaterial"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMaterialRequest"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+    get:
+      summary: "GET material"
+      operationId: "getAllMaterials"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /material/batch:
+    delete:
+      summary: "DELETE material/batch"
+      operationId: "deleteMaterials"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: "array"
+              items:
+                type: "integer"
+                format: "int64"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /material/code/{materialCode}:
+    get:
+      summary: "GET material/code/{materialCode}"
+      operationId: "getMaterialByCode"
+      parameters:
+        - name: "materialCode"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /material/active:
+    get:
+      summary: "GET material/active"
+      operationId: "getAllActiveMaterials"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /material/supplier/{supplierId}:
+    get:
+      summary: "GET material/supplier/{supplierId}"
+      operationId: "getMaterialsBySupplier"
+      parameters:
+        - name: "supplierId"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /material/low-stock:
+    get:
+      summary: "GET material/low-stock"
+      operationId: "getLowStockMaterials"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /material/cold-storage:
+    get:
+      summary: "GET material/cold-storage"
+      operationId: "getMaterialsRequiringColdStorage"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /material-batches/{id}:
+    put:
+      summary: "PUT material-batches/{id}"
+      operationId: "updateMaterialBatch"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMaterialBatchRequest"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+    delete:
+      summary: "DELETE material-batches/{id}"
+      operationId: "deleteMaterialBatch"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+    get:
+      summary: "GET material-batches/{id}"
+      operationId: "getMaterialBatchById"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /material-batches/{id}/quantity:
+    put:
+      summary: "PUT material-batches/{id}/quantity"
+      operationId: "updateQuantity"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+        - name: "quantity"
+          in: "query"
+          required: true
+          schema:
+            $ref: "#/components/schemas/BigDecimal"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /material-batches/{id}/test-status:
+    put:
+      summary: "PUT material-batches/{id}/test-status"
+      operationId: "updateTestStatus"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+        - name: "testStatus"
+          in: "query"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /material-batches/{id}/usage-status:
+    put:
+      summary: "PUT material-batches/{id}/usage-status"
+      operationId: "updateUsageStatus"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+        - name: "usageStatus"
+          in: "query"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /material-batches/{id}/move-location:
+    put:
+      summary: "PUT material-batches/{id}/move-location"
+      operationId: "moveToLocation"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+        - name: "newLocationId"
+          in: "query"
+          required: false
+          schema:
+            type: "integer"
+            format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /material-batches:
+    post:
+      summary: "POST material-batches"
+      operationId: "createMaterialBatch"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMaterialBatchRequest"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+    get:
+      summary: "GET material-batches"
+      operationId: "getAllMaterialBatches"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /material-batches/batch:
+    delete:
+      summary: "DELETE material-batches/batch"
+      operationId: "deleteMultipleMaterialBatches"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: "array"
+              items:
+                type: "integer"
+                format: "int64"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /material-batches/batch-number/{batchNumber}:
+    get:
+      summary: "GET material-batches/batch-number/{batchNumber}"
+      operationId: "getMaterialBatchByBatchNumber"
+      parameters:
+        - name: "batchNumber"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /material-batches/internal-code/{internalCode}:
+    get:
+      summary: "GET material-batches/internal-code/{internalCode}"
+      operationId: "getMaterialBatchByInternalCode"
+      parameters:
+        - name: "internalCode"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /material-batches/by-material/{materialId}:
+    get:
+      summary: "GET material-batches/by-material/{materialId}"
+      operationId: "getMaterialBatchesByMaterial"
+      parameters:
+        - name: "materialId"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /material-batches/by-location/{locationId}:
+    get:
+      summary: "GET material-batches/by-location/{locationId}"
+      operationId: "getMaterialBatchesByLocation"
+      parameters:
+        - name: "locationId"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /material-batches/expired:
+    get:
+      summary: "GET material-batches/expired"
+      operationId: "getExpiredBatches"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /material-batches/near-expiry:
+    get:
+      summary: "GET material-batches/near-expiry"
+      operationId: "getBatchesNearExpiry"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /material-batches/usable:
+    get:
+      summary: "GET material-batches/usable"
+      operationId: "getUsableBatches"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /material-batches/total-quantity/{materialId}:
+    get:
+      summary: "GET material-batches/total-quantity/{materialId}"
+      operationId: "getTotalQuantityByMaterial"
+      parameters:
+        - name: "materialId"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /material-batches/oldest-usable/{materialId}:
+    get:
+      summary: "GET material-batches/oldest-usable/{materialId}"
+      operationId: "getOldestUsableBatches"
+      parameters:
+        - name: "materialId"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /material-transactions/{id}:
+    put:
+      summary: "PUT material-transactions/{id}"
+      operationId: "updateMaterialTransaction"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateMaterialTransactionRequest"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+    delete:
+      summary: "DELETE material-transactions/{id}"
+      operationId: "deleteMaterialTransaction"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+    get:
+      summary: "GET material-transactions/{id}"
+      operationId: "getMaterialTransactionById"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /material-transactions/{id}/approve:
+    put:
+      summary: "PUT material-transactions/{id}/approve"
+      operationId: "approveMaterialTransaction"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+        - name: "approvedById"
+          in: "query"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /material-transactions:
+    post:
+      summary: "POST material-transactions"
+      operationId: "createMaterialTransaction"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateMaterialTransactionRequest"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+    get:
+      summary: "GET material-transactions"
+      operationId: "getAllMaterialTransactions"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /material-transactions/batch:
+    delete:
+      summary: "DELETE material-transactions/batch"
+      operationId: "deleteAllIdMaterialTransactions"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: "array"
+              items:
+                type: "integer"
+                format: "int64"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /material-transactions/batch/{materialBatchId}:
+    get:
+      summary: "GET material-transactions/batch/{materialBatchId}"
+      operationId: "getMaterialTransactionsByBatch"
+      parameters:
+        - name: "materialBatchId"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /material-transactions/type/{transactionType}:
+    get:
+      summary: "GET material-transactions/type/{transactionType}"
+      operationId: "getMaterialTransactionsByType"
+      parameters:
+        - name: "transactionType"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+            enum:
+              - "NHAP_KHO"
+              - "XUAT_KHO"
+              - "DIEU_CHINH"
+              - "TRA_HANG"
+              - "HUY_BO"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /material-transactions/date-range:
+    get:
+      summary: "GET material-transactions/date-range"
+      operationId: "getMaterialTransactionsByDateRange"
+      parameters:
+        - name: "startDate"
+          in: "query"
+          required: true
+          schema:
+            type: "string"
+            format: "date-time"
+        - name: "endDate"
+          in: "query"
+          required: true
+          schema:
+            type: "string"
+            format: "date-time"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /material-transactions/warehouse/{warehouseId}/date-range:
+    get:
+      summary: "GET material-transactions/warehouse/{warehouseId}/date-range"
+      operationId: "getWarehouseTransactionsByDateRange"
+      parameters:
+        - name: "warehouseId"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+        - name: "startDate"
+          in: "query"
+          required: true
+          schema:
+            type: "string"
+            format: "date-time"
+        - name: "endDate"
+          in: "query"
+          required: true
+          schema:
+            type: "string"
+            format: "date-time"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /material-transactions/batch/{materialBatchId}/quantity/{transactionType}:
+    get:
+      summary: "GET material-transactions/batch/{materialBatchId}/quantity/{transactionType}"
+      operationId: "getTotalQuantityByBatchAndType"
+      parameters:
+        - name: "materialBatchId"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+        - name: "transactionType"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+            enum:
+              - "NHAP_KHO"
+              - "XUAT_KHO"
+              - "DIEU_CHINH"
+              - "TRA_HANG"
+              - "HUY_BO"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /suppliers:
+    put:
+      summary: "PUT suppliers"
+      operationId: "updateSupplier"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateSupplierRequest"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+    post:
+      summary: "POST suppliers"
+      operationId: "createSupplier"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateSupplierRequest"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+    get:
+      summary: "GET suppliers"
+      operationId: "getAllSuppliers"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /suppliers/{id}/toggle-status:
+    put:
+      summary: "PUT suppliers/{id}/toggle-status"
+      operationId: "toggleSupplierStatus"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /suppliers/{id}:
+    delete:
+      summary: "DELETE suppliers/{id}"
+      operationId: "deleteSupplier"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+    get:
+      summary: "GET suppliers/{id}"
+      operationId: "getSupplierById"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /suppliers/bulk:
+    delete:
+      summary: "DELETE suppliers/bulk"
+      operationId: "deleteSuppliers"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: "array"
+              items:
+                type: "integer"
+                format: "int64"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /suppliers/code/{supplierCode}:
+    get:
+      summary: "GET suppliers/code/{supplierCode}"
+      operationId: "getSupplierByCode"
+      parameters:
+        - name: "supplierCode"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /suppliers/active:
+    get:
+      summary: "GET suppliers/active"
+      operationId: "getActiveSuppliers"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /suppliers/country/{countryOfOrigin}:
+    get:
+      summary: "GET suppliers/country/{countryOfOrigin}"
+      operationId: "getSuppliersByCountry"
+      parameters:
+        - name: "countryOfOrigin"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /suppliers/gmp/expiring/{days}:
+    get:
+      summary: "GET suppliers/gmp/expiring/{days}"
+      operationId: "getSuppliersWithExpiringGmp"
+      parameters:
+        - name: "days"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int32"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /suppliers/gmp/expired:
+    get:
+      summary: "GET suppliers/gmp/expired"
+      operationId: "getSuppliersWithExpiredGmp"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /stock-alerts/{id}:
+    put:
+      summary: "PUT stock-alerts/{id}"
+      operationId: "updateStockAlert"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateStockAlertRequest"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+    delete:
+      summary: "DELETE stock-alerts/{id}"
+      operationId: "deleteStockAlert"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+    get:
+      summary: "GET stock-alerts/{id}"
+      operationId: "getStockAlertById"
+      parameters:
+        - name: "id"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /stock-alerts/resolve:
+    put:
+      summary: "PUT stock-alerts/resolve"
+      operationId: "resolveAlert"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResolveAlertRequest"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /stock-alerts:
+    post:
+      summary: "POST stock-alerts"
+      operationId: "createStockAlert"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateStockAlertRequest"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+    get:
+      summary: "GET stock-alerts"
+      operationId: "getAllStockAlerts"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /stock-alerts/low-stock:
+    post:
+      summary: "POST stock-alerts/low-stock"
+      operationId: "createLowStockAlert"
+      parameters:
+        - name: "materialId"
+          in: "query"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+        - name: "currentStock"
+          in: "query"
+          required: true
+          schema:
+            type: "number"
+            format: "double"
+        - name: "minThreshold"
+          in: "query"
+          required: true
+          schema:
+            type: "number"
+            format: "double"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /stock-alerts/expired:
+    post:
+      summary: "POST stock-alerts/expired"
+      operationId: "createExpiryAlert"
+      parameters:
+        - name: "materialBatchId"
+          in: "query"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+        - name: "expiryDate"
+          in: "query"
+          required: true
+          schema:
+            type: "string"
+            format: "date-time"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /stock-alerts/near-expiry:
+    post:
+      summary: "POST stock-alerts/near-expiry"
+      operationId: "createNearExpiryAlert"
+      parameters:
+        - name: "materialBatchId"
+          in: "query"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+        - name: "expiryDate"
+          in: "query"
+          required: true
+          schema:
+            type: "string"
+            format: "date-time"
+        - name: "daysBeforeExpiry"
+          in: "query"
+          required: true
+          schema:
+            type: "integer"
+            format: "int32"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /stock-alerts/negative-stock:
+    post:
+      summary: "POST stock-alerts/negative-stock"
+      operationId: "createNegativeStockAlert"
+      parameters:
+        - name: "materialId"
+          in: "query"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+        - name: "currentStock"
+          in: "query"
+          required: true
+          schema:
+            type: "number"
+            format: "double"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /stock-alerts/quarantine:
+    post:
+      summary: "POST stock-alerts/quarantine"
+      operationId: "createQuarantineAlert"
+      parameters:
+        - name: "materialBatchId"
+          in: "query"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+        - name: "reason"
+          in: "query"
+          required: true
+          schema:
+            type: "string"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /stock-alerts/batch:
+    delete:
+      summary: "DELETE stock-alerts/batch"
+      operationId: "deleteMultipleStockAlerts"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: "array"
+              items:
+                type: "integer"
+                format: "int64"
+        required: true
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /stock-alerts/material/{materialId}:
+    get:
+      summary: "GET stock-alerts/material/{materialId}"
+      operationId: "getStockAlertsByMaterial"
+      parameters:
+        - name: "materialId"
+          in: "path"
+          required: true
+          schema:
+            type: "integer"
+            format: "int64"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /stock-alerts/unresolved:
+    get:
+      summary: "GET stock-alerts/unresolved"
+      operationId: "getUnresolvedAlerts"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /stock-alerts/count/unresolved:
+    get:
+      summary: "GET stock-alerts/count/unresolved"
+      operationId: "countUnresolvedAlerts"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /stock-alerts/count/unresolved/{alertType}:
+    get:
+      summary: "GET stock-alerts/count/unresolved/{alertType}"
+      operationId: "countUnresolvedAlertsByType"
+      parameters:
+        - name: "alertType"
+          in: "path"
+          required: true
+          schema:
+            type: "string"
+            enum:
+              - "LOW_STOCK"
+              - "EXPIRED"
+              - "NEAR_EXPIRY"
+              - "NEGATIVE_STOCK"
+              - "QUARANTINE"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+  /stock-alerts/date-range:
+    get:
+      summary: "GET stock-alerts/date-range"
+      operationId: "getAlertsByDateRange"
+      parameters:
+        - name: "fromDate"
+          in: "query"
+          required: true
+          schema:
+            type: "string"
+            format: "date-time"
+        - name: "toDate"
+          in: "query"
+          required: true
+          schema:
+            type: "string"
+            format: "date-time"
+      responses:
+        "200":
+          description: "OK"
+          content:
+            '*/*':
+              schema:
+                type: "object"
+components:
+  schemas:
+    UpdateUserRequest:
+      type: "object"
+      properties:
+        id:
+          type: "integer"
+          format: "int64"
+          nullable: true
+        email:
+          type: "string"
+          nullable: true
+        fullName:
+          type: "string"
+          nullable: true
+        address:
+          type: "string"
+          nullable: true
+        phone:
+          type: "string"
+          nullable: true
+        department:
+          type: "string"
+          nullable: true
+        position:
+          type: "string"
+          nullable: true
+        block:
+          type: "boolean"
+          nullable: true
+        b64:
+          type: "string"
+          nullable: true
+        fileType:
+          type: "string"
+          nullable: true
+        roleId:
+          type: "string"
+          nullable: true
+    CreateUserRequest:
+      type: "object"
+      properties:
+        email:
+          type: "string"
+          nullable: true
+        password:
+          type: "string"
+          nullable: true
+        fullName:
+          type: "string"
+          nullable: true
+        address:
+          type: "string"
+          nullable: true
+        phone:
+          type: "string"
+          nullable: true
+        department:
+          type: "string"
+          nullable: true
+        position:
+          type: "string"
+          nullable: true
+        roleId:
+          type: "string"
+          nullable: true
+    VerifyAccountRequest:
+      type: "object"
+      properties:
+        email:
+          type: "string"
+          nullable: true
+        otp:
+          type: "string"
+          nullable: true
+    RegenerateOtpRequest:
+      type: "object"
+      properties:
+        email:
+          type: "string"
+          nullable: true
+    ForgotPasswordRequest:
+      type: "object"
+      properties:
+        email:
+          type: "string"
+          nullable: true
+        password:
+          type: "string"
+          nullable: true
+        otp:
+          type: "string"
+          nullable: true
+    UpdateProfileRequest:
+      type: "object"
+      properties:
+        email:
+          type: "string"
+          nullable: true
+        fullName:
+          type: "string"
+          nullable: true
+        address:
+          type: "string"
+          nullable: true
+        phone:
+          type: "string"
+          nullable: true
+        department:
+          type: "string"
+          nullable: true
+        position:
+          type: "string"
+          nullable: true
+    LoginRequest:
+      type: "object"
+      properties:
+        email:
+          type: "string"
+          nullable: true
+        password:
+          type: "string"
+          nullable: true
+    RegisterRequest:
+      type: "object"
+      properties:
+        email:
+          type: "string"
+          nullable: true
+        password:
+          type: "string"
+          nullable: true
+        fullName:
+          type: "string"
+          nullable: true
+        address:
+          type: "string"
+          nullable: true
+        phone:
+          type: "string"
+          nullable: true
+    UpdateLocationRequest:
+      type: "object"
+      properties:
+        id:
+          type: "integer"
+          format: "int64"
+          nullable: true
+        warehouseId:
+          type: "integer"
+          format: "int64"
+          nullable: true
+        locationCode:
+          type: "string"
+          nullable: true
+        shelf:
+          type: "string"
+          nullable: true
+        floor:
+          type: "string"
+          nullable: true
+        positionDetail:
+          type: "string"
+          nullable: true
+        maxCapacity:
+          type: "number"
+          format: "double"
+          nullable: true
+        currentCapacity:
+          type: "number"
+          format: "double"
+          nullable: true
+        isAvailable:
+          type: "boolean"
+          nullable: true
+    CreateLocationRequest:
+      type: "object"
+      properties:
+        warehouseId:
+          type: "integer"
+          format: "int64"
+          nullable: true
+        locationCode:
+          type: "string"
+          nullable: true
+        shelf:
+          type: "string"
+          nullable: true
+        floor:
+          type: "string"
+          nullable: true
+        positionDetail:
+          type: "string"
+          nullable: true
+        maxCapacity:
+          type: "number"
+          format: "double"
+          nullable: true
+        currentCapacity:
+          type: "number"
+          format: "double"
+          nullable: true
+    UpdateWarehouseRequest:
+      type: "object"
+      properties:
+        id:
+          type: "integer"
+          format: "int64"
+          nullable: true
+        warehouseCode:
+          type: "string"
+          nullable: true
+        warehouseName:
+          type: "string"
+          nullable: true
+        warehouseType:
+          type: "string"
+          nullable: true
+        address:
+          type: "string"
+          nullable: true
+        managerName:
+          type: "string"
+          nullable: true
+        temperatureRange:
+          type: "string"
+          nullable: true
+        humidityRange:
+          type: "string"
+          nullable: true
+        specialConditions:
+          type: "string"
+          nullable: true
+        isActive:
+          type: "boolean"
+          nullable: true
+    CreateWarehouseRequest:
+      type: "object"
+      properties:
+        warehouseCode:
+          type: "string"
+          nullable: true
+        warehouseName:
+          type: "string"
+          nullable: true
+        warehouseType:
+          type: "string"
+          nullable: true
+        address:
+          type: "string"
+          nullable: true
+        managerName:
+          type: "string"
+          nullable: true
+        temperatureRange:
+          type: "string"
+          nullable: true
+        humidityRange:
+          type: "string"
+          nullable: true
+        specialConditions:
+          type: "string"
+          nullable: true
+    UpdateMaterialRequest:
+      type: "object"
+      properties:
+        id:
+          type: "integer"
+          format: "int64"
+          nullable: true
+        materialCode:
+          type: "string"
+          nullable: true
+        materialName:
+          type: "string"
+          nullable: true
+        shortName:
+          type: "string"
+          nullable: true
+        materialType:
+          type: "string"
+          nullable: true
+          enum:
+            - "NGUYEN_LIEU"
+            - "PHU_LIEU"
+            - "BAO_BI"
+            - "VAT_TU_TIEU_HAO"
+            - "DUNG_MOI"
+            - "KHAC"
+        materialForm:
+          type: "string"
+          nullable: true
+          enum:
+            - "BOT"
+            - "LONG"
+            - "HAT"
+            - "VIEN"
+            - "BAO_PHIM"
+            - "KHAC"
+        activeIngredient:
+          type: "string"
+          nullable: true
+        purityPercentage:
+          type: "number"
+          format: "double"
+          nullable: true
+        iuPerGram:
+          type: "number"
+          format: "double"
+          nullable: true
+        color:
+          type: "string"
+          nullable: true
+        odor:
+          type: "string"
+          nullable: true
+        moistureContent:
+          type: "number"
+          format: "double"
+          nullable: true
+        viscosity:
+          type: "number"
+          format: "double"
+          nullable: true
+        unitOfMeasure:
+          type: "string"
+          nullable: true
+        standardApplied:
+          type: "string"
+          nullable: true
+        supplierId:
+          type: "integer"
+          format: "int64"
+          nullable: true
+        minimumStockLevel:
+          type: "number"
+          format: "double"
+          nullable: true
+        currentStock:
+          type: "number"
+          format: "double"
+          nullable: true
+        fixedPrice:
+          type: "number"
+          format: "double"
+          nullable: true
+        requiresColdStorage:
+          type: "boolean"
+          nullable: true
+        specialHandling:
+          type: "string"
+          nullable: true
+        isActive:
+          type: "boolean"
+          nullable: true
+        notes:
+          type: "string"
+          nullable: true
+    CreateMaterialRequest:
+      type: "object"
+      properties:
+        materialCode:
+          type: "string"
+          nullable: true
+        materialName:
+          type: "string"
+          nullable: true
+        shortName:
+          type: "string"
+          nullable: true
+        materialType:
+          type: "string"
+          nullable: true
+          enum:
+            - "NGUYEN_LIEU"
+            - "PHU_LIEU"
+            - "BAO_BI"
+            - "VAT_TU_TIEU_HAO"
+            - "DUNG_MOI"
+            - "KHAC"
+        materialForm:
+          type: "string"
+          nullable: true
+          enum:
+            - "BOT"
+            - "LONG"
+            - "HAT"
+            - "VIEN"
+            - "BAO_PHIM"
+            - "KHAC"
+        activeIngredient:
+          type: "string"
+          nullable: true
+        purityPercentage:
+          type: "number"
+          format: "double"
+          nullable: true
+        iuPerGram:
+          type: "number"
+          format: "double"
+          nullable: true
+        color:
+          type: "string"
+          nullable: true
+        odor:
+          type: "string"
+          nullable: true
+        moistureContent:
+          type: "number"
+          format: "double"
+          nullable: true
+        viscosity:
+          type: "number"
+          format: "double"
+          nullable: true
+        unitOfMeasure:
+          type: "string"
+          nullable: true
+        standardApplied:
+          type: "string"
+          nullable: true
+        supplierId:
+          type: "integer"
+          format: "int64"
+          nullable: true
+        minimumStockLevel:
+          type: "number"
+          format: "double"
+          nullable: true
+        currentStock:
+          type: "number"
+          format: "double"
+          nullable: true
+        fixedPrice:
+          type: "number"
+          format: "double"
+          nullable: true
+        requiresColdStorage:
+          type: "boolean"
+          nullable: true
+        specialHandling:
+          type: "string"
+          nullable: true
+        notes:
+          type: "string"
+          nullable: true
+    BigDecimal:
+      type: "object"
+      properties: { }
+    UpdateMaterialBatchRequest:
+      type: "object"
+      properties:
+        id:
+          type: "integer"
+          format: "int64"
+          nullable: true
+        materialId:
+          type: "integer"
+          format: "int64"
+          nullable: true
+        locationId:
+          type: "integer"
+          format: "int64"
+          nullable: true
+        batchNumber:
+          type: "string"
+          nullable: true
+        internalBatchCode:
+          type: "string"
+          nullable: true
+        manufacturerBatchNumber:
+          type: "string"
+          nullable: true
+        manufacturingDate:
+          type: "string"
+          format: "date"
+          nullable: true
+        expiryDate:
+          type: "string"
+          format: "date"
+          nullable: true
+        receivedDate:
+          type: "string"
+          format: "date"
+          nullable: true
+        receivedQuantity:
+          nullable: true
+          $ref: "#/components/schemas/BigDecimal"
+        currentQuantity:
+          nullable: true
+          $ref: "#/components/schemas/BigDecimal"
+        unitPrice:
+          nullable: true
+          $ref: "#/components/schemas/BigDecimal"
+        testStatus:
+          type: "string"
+          nullable: true
+          enum:
+            - "CHO_KIEM_NGHIEM"
+            - "DAT"
+            - "KHONG_DAT"
+            - "DANG_CACH_LY"
+        usageStatus:
+          type: "string"
+          nullable: true
+          enum:
+            - "CACH_LY"
+            - "SAN_SANG_SU_DUNG"
+            - "DANG_SU_DUNG"
+            - "DA_HET"
+            - "BI_CAM"
+            - "HET_HAN"
+            - "HONG"
+        coaNumber:
+          type: "string"
+          nullable: true
+        testReportNumber:
+          type: "string"
+          nullable: true
+        testResults:
+          type: "string"
+          nullable: true
+        quarantineReason:
+          type: "string"
+          nullable: true
+        coaFilePath:
+          type: "string"
+          nullable: true
+        msdsFilePath:
+          type: "string"
+          nullable: true
+        testCertificatePath:
+          type: "string"
+          nullable: true
+        notes:
+          type: "string"
+          nullable: true
+    CreateMaterialBatchRequest:
+      type: "object"
+      properties:
+        materialId:
+          type: "integer"
+          format: "int64"
+          nullable: true
+        locationId:
+          type: "integer"
+          format: "int64"
+          nullable: true
+        batchNumber:
+          type: "string"
+          nullable: true
+        internalBatchCode:
+          type: "string"
+          nullable: true
+        manufacturerBatchNumber:
+          type: "string"
+          nullable: true
+        manufacturingDate:
+          type: "string"
+          format: "date"
+          nullable: true
+        expiryDate:
+          type: "string"
+          format: "date"
+          nullable: true
+        receivedDate:
+          type: "string"
+          format: "date"
+          nullable: true
+        receivedQuantity:
+          nullable: true
+          $ref: "#/components/schemas/BigDecimal"
+        currentQuantity:
+          nullable: true
+          $ref: "#/components/schemas/BigDecimal"
+        unitPrice:
+          nullable: true
+          $ref: "#/components/schemas/BigDecimal"
+        testStatus:
+          type: "string"
+          nullable: true
+          enum:
+            - "CHO_KIEM_NGHIEM"
+            - "DAT"
+            - "KHONG_DAT"
+            - "DANG_CACH_LY"
+        usageStatus:
+          type: "string"
+          nullable: true
+          enum:
+            - "CACH_LY"
+            - "SAN_SANG_SU_DUNG"
+            - "DANG_SU_DUNG"
+            - "DA_HET"
+            - "BI_CAM"
+            - "HET_HAN"
+            - "HONG"
+        coaNumber:
+          type: "string"
+          nullable: true
+        testReportNumber:
+          type: "string"
+          nullable: true
+        testResults:
+          type: "string"
+          nullable: true
+        quarantineReason:
+          type: "string"
+          nullable: true
+        coaFilePath:
+          type: "string"
+          nullable: true
+        msdsFilePath:
+          type: "string"
+          nullable: true
+        testCertificatePath:
+          type: "string"
+          nullable: true
+        notes:
+          type: "string"
+          nullable: true
+    UpdateMaterialTransactionRequest:
+      type: "object"
+      properties:
+        id:
+          type: "integer"
+          format: "int64"
+          nullable: true
+        materialBatchId:
+          type: "integer"
+          format: "int64"
+          nullable: true
+        transactionType:
+          type: "string"
+          nullable: true
+          enum:
+            - "NHAP_KHO"
+            - "XUAT_KHO"
+            - "DIEU_CHINH"
+            - "TRA_HANG"
+            - "HUY_BO"
+        transactionDate:
+          type: "string"
+          format: "date-time"
+          nullable: true
+        quantity:
+          nullable: true
+          $ref: "#/components/schemas/BigDecimal"
+        unitPrice:
+          nullable: true
+          $ref: "#/components/schemas/BigDecimal"
+        totalValue:
+          nullable: true
+          $ref: "#/components/schemas/BigDecimal"
+        referenceDocument:
+          type: "string"
+          nullable: true
+        productionOrderId:
+          type: "string"
+          nullable: true
+        fromLocationId:
+          type: "integer"
+          format: "int64"
+          nullable: true
+        toLocationId:
+          type: "integer"
+          format: "int64"
+          nullable: true
+        reason:
+          type: "string"
+          nullable: true
+        notes:
+          type: "string"
+          nullable: true
+        approvedById:
+          type: "integer"
+          format: "int64"
+          nullable: true
+    CreateMaterialTransactionRequest:
+      type: "object"
+      properties:
+        materialBatchId:
+          type: "integer"
+          format: "int64"
+          nullable: true
+        transactionType:
+          type: "string"
+          nullable: true
+          enum:
+            - "NHAP_KHO"
+            - "XUAT_KHO"
+            - "DIEU_CHINH"
+            - "TRA_HANG"
+            - "HUY_BO"
+        transactionDate:
+          type: "string"
+          format: "date-time"
+          nullable: true
+        quantity:
+          nullable: true
+          $ref: "#/components/schemas/BigDecimal"
+        unitPrice:
+          nullable: true
+          $ref: "#/components/schemas/BigDecimal"
+        totalValue:
+          nullable: true
+          $ref: "#/components/schemas/BigDecimal"
+        referenceDocument:
+          type: "string"
+          nullable: true
+        productionOrderId:
+          type: "string"
+          nullable: true
+        fromLocationId:
+          type: "integer"
+          format: "int64"
+          nullable: true
+        toLocationId:
+          type: "integer"
+          format: "int64"
+          nullable: true
+        reason:
+          type: "string"
+          nullable: true
+        notes:
+          type: "string"
+          nullable: true
+        approvedById:
+          type: "integer"
+          format: "int64"
+          nullable: true
+    UpdateSupplierRequest:
+      type: "object"
+      properties:
+        id:
+          type: "integer"
+          format: "int64"
+          nullable: true
+        supplierCode:
+          type: "string"
+          nullable: true
+        supplierName:
+          type: "string"
+          nullable: true
+        manufacturerName:
+          type: "string"
+          nullable: true
+        distributorName:
+          type: "string"
+          nullable: true
+        address:
+          type: "string"
+          nullable: true
+        registrationNumber:
+          type: "string"
+          nullable: true
+        phone:
+          type: "string"
+          nullable: true
+        email:
+          type: "string"
+          nullable: true
+        contactPerson:
+          type: "string"
+          nullable: true
+        gmpCertificate:
+          type: "string"
+          nullable: true
+        gmpExpiryDate:
+          type: "string"
+          format: "date"
+          nullable: true
+        countryOfOrigin:
+          type: "string"
+          nullable: true
+        isActive:
+          type: "boolean"
+          nullable: true
+        notes:
+          type: "string"
+          nullable: true
+    CreateSupplierRequest:
+      type: "object"
+      properties:
+        supplierCode:
+          type: "string"
+          nullable: true
+        supplierName:
+          type: "string"
+          nullable: true
+        manufacturerName:
+          type: "string"
+          nullable: true
+        distributorName:
+          type: "string"
+          nullable: true
+        address:
+          type: "string"
+          nullable: true
+        registrationNumber:
+          type: "string"
+          nullable: true
+        phone:
+          type: "string"
+          nullable: true
+        email:
+          type: "string"
+          nullable: true
+        contactPerson:
+          type: "string"
+          nullable: true
+        gmpCertificate:
+          type: "string"
+          nullable: true
+        gmpExpiryDate:
+          type: "string"
+          format: "date"
+          nullable: true
+        countryOfOrigin:
+          type: "string"
+          nullable: true
+        notes:
+          type: "string"
+          nullable: true
+    UpdateStockAlertRequest:
+      type: "object"
+      properties:
+        id:
+          type: "integer"
+          format: "int64"
+          nullable: true
+        materialId:
+          type: "integer"
+          format: "int64"
+          nullable: true
+        materialBatchId:
+          type: "integer"
+          format: "int64"
+          nullable: true
+        alertType:
+          type: "string"
+          nullable: true
+          enum:
+            - "LOW_STOCK"
+            - "EXPIRED"
+            - "NEAR_EXPIRY"
+            - "NEGATIVE_STOCK"
+            - "QUARANTINE"
+        alertMessage:
+          type: "string"
+          nullable: true
+        isResolved:
+          type: "boolean"
+          nullable: true
+        resolutionNotes:
+          type: "string"
+          nullable: true
+    ResolveAlertRequest:
+      type: "object"
+      properties:
+        alertId:
+          type: "integer"
+          format: "int64"
+          nullable: true
+        userId:
+          type: "integer"
+          format: "int64"
+          nullable: true
+        resolutionNotes:
+          type: "string"
+          nullable: true
+    CreateStockAlertRequest:
+      type: "object"
+      properties:
+        materialId:
+          type: "integer"
+          format: "int64"
+          nullable: true
+        materialBatchId:
+          type: "integer"
+          format: "int64"
+          nullable: true
+        alertType:
+          type: "string"
+          nullable: true
+          enum:
+            - "LOW_STOCK"
+            - "EXPIRED"
+            - "NEAR_EXPIRY"
+            - "NEGATIVE_STOCK"
+            - "QUARANTINE"
+        alertMessage:
+          type: "string"
+          nullable: true
