@@ -1,0 +1,40 @@
+spring:
+  application:
+    name: veternary_beapp
+  server:
+    port: 8080
+  datasource:
+    username: lamdo
+    password: Lamub123@
+    url: jdbc:mysql://10.10.59.102:3306/veterinary_camunda?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    open-in-view: false
+    hibernate:
+      ddl-auto: update
+  main:
+    allow-circular-references: true
+  servlet:
+    multipart:
+      max-file-size: 200MB
+      max-request-size: 215MB
+      enabled: true
+      file-size-threshold: 2KB
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: lamubboy@gmail.com
+    password: "qkoy ffal vyxu nyol"
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
+
+jwt:
+  key: "DRgQOA9l5Ob2ZOSFVE/ybFJwQDmLhRdadLfy0AnVpGU="
+
+FRONTEND_URL: http://localhost:5173
+
+# PayOS Configuration (chưa dùng)
+#PAYOS_CLIENT_ID: your_payos_client_id
+#PAYOS_API_KEY: your_payos_api_key
+#PAYOS_CHECKSUM_KEY: your_payos_checksum_key

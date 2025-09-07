@@ -3,6 +3,8 @@ package ext.vnua.veterinary_beapp.modules.users.dto.entity;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
+import java.time.LocalDateTime;
+
 @Data
 public class UserDto {
     private Long id;
@@ -26,6 +28,10 @@ public class UserDto {
     private String department;
 
     private String position;
+
+    private LocalDateTime createdDate;
+
+    private LocalDateTime lastModifiedDate;
 
     @Override
     public String toString() {

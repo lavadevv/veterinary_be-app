@@ -1,6 +1,8 @@
 package ext.vnua.veterinary_beapp.modules.material.repository;
 
+import ext.vnua.veterinary_beapp.modules.material.model.Material;
 import ext.vnua.veterinary_beapp.modules.material.model.MaterialTransaction;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -13,6 +15,21 @@ import java.util.Optional;
 
 @Repository
 public interface MaterialTransactionRepository extends JpaRepository<MaterialTransaction, Long>, JpaSpecificationExecutor<MaterialTransaction> {
+
+    @EntityGraph(attributePaths = {
+            "materialBatch",
+            "materialBatch.material",
+            "materialBatch.material.supplier",
+            "materialBatch.location",
+            "materialBatch.location.warehouse",
+            "fromLocation",
+            "fromLocation.warehouse",
+            "toLocation",
+            "toLocation.warehouse",
+            "approvedBy"
+    })
+    Optional<MaterialTransaction> findById(Long id);
+
 
     // Tìm theo material batch
     List<MaterialTransaction> findByMaterialBatchId(Long materialBatchId);

@@ -90,5 +90,32 @@ public class MaterialBatch extends AuditableEntity {
 
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("\n=== THÔNG TIN LÔ NGUYÊN LIỆU ===\n");
+        sb.append("Mã lô nội bộ         : ").append(internalBatchCode != null ? internalBatchCode : "Chưa có").append("\n");
+        sb.append("Mã lô NSX            : ").append(batchNumber).append("\n");
+        if (manufacturerBatchNumber != null) sb.append("Mã lô của hãng       : ").append(manufacturerBatchNumber).append("\n");
+        if (manufacturingDate != null) sb.append("Ngày sản xuất        : ").append(manufacturingDate).append("\n");
+        if (expiryDate != null) sb.append("Hạn sử dụng          : ").append(expiryDate).append("\n");
+        sb.append("Ngày nhập            : ").append(receivedDate).append("\n");
+        sb.append("Số lượng nhập        : ").append(receivedQuantity).append(" ").append(material.getUnitOfMeasure()).append("\n");
+        sb.append("Số lượng hiện tại    : ").append(currentQuantity).append(" ").append(material.getUnitOfMeasure()).append("\n");
+        if (unitPrice != null) sb.append("Đơn giá              : ").append(unitPrice).append(" VND\n");
+        sb.append("Tình trạng kiểm nghiệm: ").append(testStatus.getDisplayName()).append("\n");
+        sb.append("Trạng thái sử dụng   : ").append(usageStatus.getDisplayName()).append("\n");
+        if (location != null) sb.append("Vị trí kho           : ").append(location.getLocationCode()).append("\n");
+        if (coaNumber != null) sb.append("Số COA               : ").append(coaNumber).append("\n");
+        if (testReportNumber != null) sb.append("Số báo cáo kiểm nghiệm: ").append(testReportNumber).append("\n");
+        if (quarantineReason != null) sb.append("Lý do cách ly        : ").append(quarantineReason).append("\n");
+        if (notes != null) sb.append("Ghi chú              : ").append(notes).append("\n");
+        return sb.toString();
+    }
+
+
+
+
 }
 

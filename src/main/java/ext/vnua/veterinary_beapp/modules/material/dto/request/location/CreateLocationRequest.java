@@ -28,4 +28,18 @@ public class CreateLocationRequest {
 
     @DecimalMin(value = "0.0", message = "Sức chứa hiện tại không được âm")
     private Double currentCapacity;
+
+    @Override
+    public String toString() {
+        return "\n===== TẠO VỊ TRÍ MỚI =====" +
+                "\nKho ID           : " + (warehouseId != null ? warehouseId : "Chưa có") +
+                "\nMã vị trí        : " + (locationCode != null ? locationCode : "Chưa có") +
+                "\nKệ               : " + (shelf != null ? shelf : "Chưa có") +
+                "\nTầng             : " + (floor != null ? floor : "Chưa có") +
+                "\nChi tiết vị trí  : " + (positionDetail != null ? positionDetail : "Chưa có") +
+                "\nSức chứa tối đa  : " + (maxCapacity != null ? maxCapacity : "Chưa có") +
+                "\nSức chứa hiện tại: " + (currentCapacity != null ? currentCapacity : "Chưa có") +
+                "\n==========================\n";
+    }
+
 }

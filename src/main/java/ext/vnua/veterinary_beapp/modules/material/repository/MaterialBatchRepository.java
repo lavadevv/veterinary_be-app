@@ -3,6 +3,7 @@ package ext.vnua.veterinary_beapp.modules.material.repository;
 import ext.vnua.veterinary_beapp.modules.material.enums.TestStatus;
 import ext.vnua.veterinary_beapp.modules.material.enums.UsageStatus;
 import ext.vnua.veterinary_beapp.modules.material.model.MaterialBatch;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -18,6 +19,16 @@ import java.util.Optional;
 public interface MaterialBatchRepository extends JpaRepository<MaterialBatch, Long>,
         JpaSpecificationExecutor<MaterialBatch> {
 
+    @EntityGraph(attributePaths = {"material", "material.supplier", "location"})
+    List<MaterialBatch> findAll();
+
+    @EntityGraph(attributePaths = {"material", "material.supplier", "location", "location.warehouse"})
+    Optional<MaterialBatch> findById(Long id);
+
+    @Query("SELECT mb FROM MaterialBatch mb JOIN FETCH mb.material")
+    List<MaterialBatch> findAllWithMaterial();
+
+
     // Tìm theo số lô
     Optional<MaterialBatch> findByBatchNumber(String batchNumber);
 
@@ -25,6 +36,7 @@ public interface MaterialBatchRepository extends JpaRepository<MaterialBatch, Lo
     Optional<MaterialBatch> findByInternalBatchCode(String internalBatchCode);
 
     // Tìm theo vật liệu
+    @EntityGraph(attributePaths = {"material", "material.supplier", "location"})
     List<MaterialBatch> findByMaterialId(Long materialId);
 
     // Tìm theo vị trí

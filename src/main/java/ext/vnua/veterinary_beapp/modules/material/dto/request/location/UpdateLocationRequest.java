@@ -34,4 +34,20 @@ public class UpdateLocationRequest {
 
     @NotNull(message = "Trạng thái khả dụng không được để trống")
     private Boolean isAvailable;
+
+    @Override
+    public String toString() {
+        return "\n===== CẬP NHẬT VỊ TRÍ =====" +
+                "\nID vị trí        : " + (id != null ? id : "Chưa có") +
+                "\nKho ID           : " + (warehouseId != null ? warehouseId : "Chưa có") +
+                "\nMã vị trí        : " + (locationCode != null ? locationCode : "Chưa có") +
+                "\nKệ               : " + (shelf != null ? shelf : "Chưa có") +
+                "\nTầng             : " + (floor != null ? floor : "Chưa có") +
+                "\nChi tiết vị trí  : " + (positionDetail != null ? positionDetail : "Chưa có") +
+                "\nSức chứa tối đa  : " + (maxCapacity != null ? maxCapacity : "Chưa có") +
+                "\nSức chứa hiện tại: " + (currentCapacity != null ? currentCapacity : "Chưa có") +
+                "\nKhả dụng         : " + (isAvailable != null && isAvailable ? "Có" : "Không") +
+                "\n==========================\n";
+    }
+
 }

@@ -41,7 +41,7 @@ public class MaterialTransaction extends AuditableEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "material_batch_id", nullable = false)
     private MaterialBatch materialBatch;
 
@@ -67,11 +67,11 @@ public class MaterialTransaction extends AuditableEntity {
     @Column(name = "production_order_id")
     private String productionOrderId; // Link to production order if applicable
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "from_location_id")
     private Location fromLocation;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "to_location_id")
     private Location toLocation;
 
@@ -84,4 +84,26 @@ public class MaterialTransaction extends AuditableEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "approved_by")
     private User approvedBy;
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("\n=== GIAO DỊCH NGUYÊN LIỆU ===\n");
+        sb.append("Loại giao dịch       : ").append(transactionType.getDisplayName()).append("\n");
+        sb.append("Ngày giao dịch       : ").append(transactionDate).append("\n");
+        sb.append("Nguyên liệu (Lô)     : ").append(materialBatch != null ? materialBatch.getBatchNumber() : "Không rõ").append("\n");
+        sb.append("Số lượng             : ").append(quantity).append(" ").append(materialBatch.getMaterial().getUnitOfMeasure()).append("\n");
+        if (unitPrice != null) sb.append("Đơn giá              : ").append(unitPrice).append(" VND\n");
+        if (totalValue != null) sb.append("Thành tiền           : ").append(totalValue).append(" VND\n");
+        if (referenceDocument != null) sb.append("Chứng từ tham chiếu  : ").append(referenceDocument).append("\n");
+        if (productionOrderId != null) sb.append("Lệnh sản xuất liên quan: ").append(productionOrderId).append("\n");
+        if (fromLocation != null) sb.append("Từ kho               : ").append(fromLocation.getLocationCode()).append("\n");
+        if (toLocation != null) sb.append("Đến kho              : ").append(toLocation.getLocationCode()).append("\n");
+        if (reason != null) sb.append("Lý do                : ").append(reason).append("\n");
+        if (notes != null) sb.append("Ghi chú              : ").append(notes).append("\n");
+        if (approvedBy != null) sb.append("Người duyệt          : ").append(approvedBy.getFullName()).append("\n");
+        return sb.toString();
+    }
+
+
 }

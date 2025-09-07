@@ -70,4 +70,20 @@ public class StockAlert extends AuditableEntity {
 
     @Column(name = "resolution_notes", columnDefinition = "TEXT")
     private String resolutionNotes;
+
+    @Override
+    public String toString() {
+        return "CảnhBáoKho{" +
+                "id=" + id +
+                ", loại='" + (alertType != null ? alertType.getDisplayName() : null) + '\'' +
+                ", thôngĐiệp='" + (alertMessage != null && alertMessage.length() > 50
+                ? alertMessage.substring(0, 50) + "..."
+                : alertMessage) + '\'' +
+                ", ngàyCảnhBáo=" + alertDate +
+                ", đãXửLý=" + isResolved +
+                ", ngàyXửLý=" + resolvedDate +
+                ", ngườiXửLý=" + (resolvedBy != null ? resolvedBy.getEmail() : null) +
+                '}';
+    }
+
 }

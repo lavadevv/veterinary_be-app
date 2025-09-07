@@ -49,6 +49,23 @@ public class Warehouse extends AuditableEntity {
     private Boolean isActive = true;
 
     // Relationships
-    @OneToMany(mappedBy = "warehouse", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "warehouse", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private List<Location> locations;
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("\n=== THÔNG TIN KHO ===\n");
+        sb.append("Mã kho        : ").append(warehouseCode).append("\n");
+        sb.append("Tên kho       : ").append(warehouseName).append("\n");
+        sb.append("Loại kho      : ").append(warehouseType != null ? warehouseType : "Không xác định").append("\n");
+        sb.append("Người quản lý : ").append(managerName != null ? managerName : "Chưa có").append("\n");
+        sb.append("Địa chỉ       : ").append(address != null ? address : "Chưa cập nhật").append("\n");
+        sb.append("Nhiệt độ      : ").append(temperatureRange != null ? temperatureRange : "Không rõ").append("\n");
+        sb.append("Độ ẩm         : ").append(humidityRange != null ? humidityRange : "Không rõ").append("\n");
+        sb.append("Điều kiện đặc biệt: ").append(specialConditions != null ? specialConditions : "Không có").append("\n");
+        sb.append("Trạng thái    : ").append(isActive ? "Đang hoạt động" : "Ngừng hoạt động").append("\n");
+        return sb.toString();
+    }
+
 }

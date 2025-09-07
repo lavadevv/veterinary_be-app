@@ -39,6 +39,13 @@ public class WarehouseController {
                 .collect(Collectors.toList()), (int) page.getTotalElements());
     }
 
+    @GetMapping("/all")
+    @ApiOperation(value = "Lấy tất cả nhà kho không phân trang")
+    public ResponseEntity<?> getWarehouses() {
+        List<WarehouseDto> dtos = warehouseService.getAllWarehouses();
+        return ResponseEntity.ok(dtos);
+    }
+
     @GetMapping("/{id}")
     @ApiOperation(value = "Lấy warehouse theo id")
     public ResponseEntity<?> getWarehouseById(@PathVariable Long id) {
@@ -105,4 +112,5 @@ public class WarehouseController {
         warehouseService.toggleActiveStatus(id);
         return ResponseEntity.ok("Đã thay đổi trạng thái kho");
     }
+
 }

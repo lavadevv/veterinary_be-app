@@ -13,4 +13,28 @@ public class LocationDto {
     private Double maxCapacity;
     private Double currentCapacity;
     private Boolean isAvailable;
+
+    @Override
+    public String toString() {
+        return String.format(
+                "Vị trí trong kho:\n" +
+                        "   - ID: %d\n" +
+                        "   - Mã vị trí: %s\n" +
+                        "   - Kệ: %s | Tầng: %s | Chi tiết: %s\n" +
+                        "   - Sức chứa tối đa: %.2f\n" +
+                        "   - Sức chứa hiện tại: %.2f\n" +
+                        "   - Trạng thái: %s\n" +
+                        "   - Kho: %s\n",
+                id,
+                locationCode,
+                shelf,
+                floor,
+                positionDetail,
+                maxCapacity != null ? maxCapacity : 0.0,
+                currentCapacity != null ? currentCapacity : 0.0,
+                Boolean.TRUE.equals(isAvailable) ? "Còn trống" : "Đã đầy/không khả dụng",
+                warehouseDto != null ? warehouseDto.getWarehouseName() : "Không rõ"
+        );
+    }
+
 }

@@ -12,6 +12,7 @@ import java.util.List;
 
 public interface WarehouseService {
     Page<Warehouse> getAllWarehouse(CustomWarehouseQuery.WarehouseFilterParam param, PageRequest pageRequest);
+    List<WarehouseDto> getAllWarehouses();
     WarehouseDto selectWarehouseById(Long id);
     WarehouseDto selectWarehouseByCode(String warehouseCode);
     List<WarehouseDto> selectAllActiveWarehouses();

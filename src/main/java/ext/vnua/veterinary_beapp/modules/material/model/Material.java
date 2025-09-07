@@ -67,7 +67,7 @@ public class Material extends AuditableEntity {
     @Column(name = "standard_applied", columnDefinition = "TEXT")
     private String standardApplied; // USP, BP, EP, tiêu chuẩn nhà sản xuất...
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "supplier_id")
     private Supplier supplier;
 
@@ -95,5 +95,80 @@ public class Material extends AuditableEntity {
     // Relationships
     @OneToMany(mappedBy = "material", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<MaterialBatch> batches;
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("=== Thông tin nguyên liệu ===\n");
+        sb.append("Mã nguyên liệu: ").append(materialCode).append("\n");
+        sb.append("Tên nguyên liệu: ").append(materialName).append("\n");
+
+        if (shortName != null) {
+            sb.append("Tên viết tắt: ").append(shortName).append("\n");
+        }
+
+        sb.append("Loại: ").append(materialType != null ? materialType.getDisplayName() : "Chưa xác định").append("\n");
+        sb.append("Dạng: ").append(materialForm != null ? materialForm.getDisplayName() : "Chưa xác định").append("\n");
+
+        if (activeIngredient != null) {
+            sb.append("Hoạt chất chính: ").append(activeIngredient).append("\n");
+        }
+
+        if (purityPercentage != null) {
+            sb.append("Độ tinh khiết: ").append(purityPercentage).append("%\n");
+        }
+
+        if (iuPerGram != null) {
+            sb.append("Hàm lượng (IU/gram): ").append(iuPerGram).append("\n");
+        }
+
+        if (color != null) {
+            sb.append("Màu sắc: ").append(color).append("\n");
+        }
+        if (odor != null) {
+            sb.append("Mùi: ").append(odor).append("\n");
+        }
+        if (moistureContent != null) {
+            sb.append("Độ ẩm: ").append(moistureContent).append("%\n");
+        }
+        if (viscosity != null) {
+            sb.append("Độ nhớt: ").append(viscosity).append("\n");
+        }
+
+        sb.append("Đơn vị tính: ").append(unitOfMeasure).append("\n");
+
+        if (standardApplied != null) {
+            sb.append("Tiêu chuẩn áp dụng: ").append(standardApplied).append("\n");
+        }
+
+        if (supplier != null) {
+            sb.append("Nhà cung cấp: ").append(supplier.getSupplierName()).append("\n");
+        }
+
+        if (minimumStockLevel != null) {
+            sb.append("Mức tồn kho tối thiểu: ").append(minimumStockLevel).append(" ").append(unitOfMeasure).append("\n");
+        }
+
+        sb.append("Tồn kho hiện tại: ").append(currentStock).append(" ").append(unitOfMeasure).append("\n");
+
+        if (fixedPrice != null) {
+            sb.append("Đơn giá cố định: ").append(fixedPrice).append(" VND\n");
+        }
+
+        sb.append("Yêu cầu bảo quản lạnh: ").append(requiresColdStorage ? "Có" : "Không").append("\n");
+
+        if (specialHandling != null) {
+            sb.append("Hướng dẫn bảo quản đặc biệt: ").append(specialHandling).append("\n");
+        }
+
+        sb.append("Đang sử dụng: ").append(isActive ? "Có" : "Không").append("\n");
+
+        if (notes != null) {
+            sb.append("Ghi chú: ").append(notes).append("\n");
+        }
+
+        return sb.toString();
+    }
+
 }
 

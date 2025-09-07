@@ -2,6 +2,7 @@ package ext.vnua.veterinary_beapp.modules.material.repository;
 
 import ext.vnua.veterinary_beapp.modules.material.model.Material;
 import ext.vnua.veterinary_beapp.modules.material.model.MaterialBatch;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -13,6 +14,13 @@ import java.util.Optional;
 
 @Repository
 public interface MaterialRepository extends JpaRepository<Material,Long>, JpaSpecificationExecutor<Material> {
+
+    @EntityGraph(attributePaths = {"supplier"})
+    List<Material> findAll();
+
+    @EntityGraph(attributePaths = {"supplier"})
+    Optional<Material> findById(Long id);
+
     // Tìm theo mã vật liệu
     Optional<Material> findByMaterialCode(String materialCode);
 
@@ -20,6 +28,7 @@ public interface MaterialRepository extends JpaRepository<Material,Long>, JpaSpe
     Optional<Material> findByMaterialName(String materialName);
 
     // Tìm theo nhà cung cấp
+    @EntityGraph(attributePaths = {"supplier"})
     List<Material> findBySupplierId(Long supplierId);
 
     // Tìm vật liệu đang hoạt động

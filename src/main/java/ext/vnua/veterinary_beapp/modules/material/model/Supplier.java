@@ -66,4 +66,26 @@ public class Supplier extends AuditableEntity {
     // Relationships
     @OneToMany(mappedBy = "supplier", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<Material> materials;
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("\n=== THÔNG TIN NHÀ CUNG CẤP ===\n");
+        sb.append("Mã NCC              : ").append(supplierCode).append("\n");
+        sb.append("Tên NCC             : ").append(supplierName).append("\n");
+        if (manufacturerName != null) sb.append("Tên nhà sản xuất    : ").append(manufacturerName).append("\n");
+        if (distributorName != null) sb.append("Tên nhà phân phối   : ").append(distributorName).append("\n");
+        if (address != null) sb.append("Địa chỉ             : ").append(address).append("\n");
+        if (registrationNumber != null) sb.append("Số đăng ký          : ").append(registrationNumber).append("\n");
+        if (phone != null) sb.append("Số điện thoại       : ").append(phone).append("\n");
+        if (email != null) sb.append("Email               : ").append(email).append("\n");
+        if (contactPerson != null) sb.append("Người liên hệ       : ").append(contactPerson).append("\n");
+        if (gmpCertificate != null) sb.append("Chứng chỉ GMP       : ").append(gmpCertificate).append("\n");
+        if (gmpExpiryDate != null) sb.append("Ngày hết hạn GMP    : ").append(gmpExpiryDate).append("\n");
+        if (countryOfOrigin != null) sb.append("Quốc gia            : ").append(countryOfOrigin).append("\n");
+        sb.append("Trạng thái hoạt động: ").append(isActive ? "Đang hoạt động" : "Ngừng hoạt động").append("\n");
+        if (notes != null) sb.append("Ghi chú             : ").append(notes).append("\n");
+        return sb.toString();
+    }
+
 }

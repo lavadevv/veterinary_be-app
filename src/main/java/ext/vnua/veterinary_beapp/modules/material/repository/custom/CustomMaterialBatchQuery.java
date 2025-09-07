@@ -8,6 +8,7 @@ import ext.vnua.veterinary_beapp.modules.material.model.Location;
 import ext.vnua.veterinary_beapp.modules.material.model.Material;
 import ext.vnua.veterinary_beapp.modules.material.model.MaterialBatch;
 import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -44,6 +45,15 @@ public class CustomMaterialBatchQuery {
 
     public static Specification<MaterialBatch> getFilterMaterialBatch(MaterialBatchFilterParam param) {
         return ((root, query, criteriaBuilder) -> {
+            root.fetch("material", JoinType.LEFT)
+                    .fetch("supplier", JoinType.LEFT);
+            root.fetch("location", JoinType.LEFT);
+
+            if (Long.class == query.getResultType()) {
+                root.join("material", JoinType.LEFT).join("supplier", JoinType.LEFT);
+                root.join("location", JoinType.LEFT);
+            }
+
             List<Predicate> predicates = new ArrayList<>();
 
             if (param.keywords != null && !param.keywords.trim().isEmpty()) {

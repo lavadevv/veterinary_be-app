@@ -2,11 +2,12 @@ package ext.vnua.veterinary_beapp.modules.material.repository.custom;
 
 import ext.vnua.veterinary_beapp.common.Constant;
 import ext.vnua.veterinary_beapp.common.CriteriaBuilderUtil;
-import ext.vnua.veterinary_beapp.modules.material.enums.MaterialType;
 import ext.vnua.veterinary_beapp.modules.material.enums.MaterialForm;
+import ext.vnua.veterinary_beapp.modules.material.enums.MaterialType;
 import ext.vnua.veterinary_beapp.modules.material.model.Material;
 import ext.vnua.veterinary_beapp.modules.material.model.Supplier;
 import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -39,6 +40,15 @@ public class CustomMaterialQuery {
         return ((root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
 
+            // Luôn join supplier để dùng filter
+            Join<Material, Supplier> supplierJoin = root.join("supplier", JoinType.LEFT);
+
+            // Fetch supplier khi không phải count query
+            if (query.getResultType() != Long.class && query.getResultType() != long.class) {
+                root.fetch("supplier", JoinType.LEFT);
+                query.distinct(true);
+            }
+
             if (param.keywords != null && !param.keywords.trim().isEmpty()) {
                 Predicate materialNamePredicate = CriteriaBuilderUtil.createPredicateForSearchInsensitive(
                         root, criteriaBuilder, param.keywords, "materialName");
@@ -47,8 +57,6 @@ public class CustomMaterialQuery {
                 Predicate shortNamePredicate = CriteriaBuilderUtil.createPredicateForSearchInsensitive(
                         root, criteriaBuilder, param.keywords, "shortName");
 
-                // Search in supplier name as well
-                Join<Material, Supplier> supplierJoin = root.join("supplier");
                 Predicate supplierNamePredicate = CriteriaBuilderUtil.createPredicateForSearchInsensitive(
                         supplierJoin, criteriaBuilder, param.keywords, "supplierName");
 
@@ -65,7 +73,6 @@ public class CustomMaterialQuery {
             }
 
             if (param.supplierId != null) {
-                Join<Material, Supplier> supplierJoin = root.join("supplier");
                 predicates.add(criteriaBuilder.equal(supplierJoin.get("id"), param.supplierId));
             }
 

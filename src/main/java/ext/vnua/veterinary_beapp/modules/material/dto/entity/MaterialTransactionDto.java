@@ -23,4 +23,40 @@ public class MaterialTransactionDto {
     private String notes;
     private UserDto createdByDto;
     private UserDto approvedByDto;
+
+    @Override
+    public String toString() {
+        return String.format(
+                "Giao dịch nguyên liệu:\n" +
+                        "   - ID: %d\n" +
+                        "   - Loại giao dịch: %s\n" +
+                        "   - Ngày giao dịch: %s\n" +
+                        "   - Số lượng: %s\n" +
+                        "   - Đơn giá: %s\n" +
+                        "   - Tổng giá trị: %s\n" +
+                        "   - Tài liệu tham chiếu: %s\n" +
+                        "   - Lệnh sản xuất: %s\n" +
+                        "   - Vị trí từ: %s\n" +
+                        "   - Vị trí đến: %s\n" +
+                        "   - Lý do: %s\n" +
+                        "   - Ghi chú: %s\n" +
+                        "   - Người tạo: %s\n" +
+                        "   - Người duyệt: %s\n",
+                id,
+                transactionType != null ? transactionType.name() : "Không rõ",
+                transactionDate != null ? transactionDate.toString() : "Không rõ",
+                quantity,
+                unitPrice,
+                totalValue,
+                referenceDocument,
+                productionOrderId,
+                fromLocationDto != null ? fromLocationDto.getLocationCode() : "Không rõ",
+                toLocationDto != null ? toLocationDto.getLocationCode() : "Không rõ",
+                reason,
+                notes,
+                createdByDto != null ? createdByDto.getEmail() : "Không rõ",
+                approvedByDto != null ? approvedByDto.getEmail() : "Chưa duyệt"
+        );
+    }
+
 }

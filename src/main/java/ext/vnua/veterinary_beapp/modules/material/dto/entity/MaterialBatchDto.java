@@ -33,4 +33,37 @@ public class MaterialBatchDto {
     private String testCertificatePath;
     private String notes;
 
+    @Override
+    public String toString() {
+        return String.format(
+                "Lô nguyên liệu:\n" +
+                        "   - ID: %d\n" +
+                        "   - Số lô: %s\n" +
+                        "   - Mã nội bộ: %s\n" +
+                        "   - Số lô NSX: %s\n" +
+                        "   - Ngày sản xuất: %s\n" +
+                        "   - Hạn sử dụng: %s\n" +
+                        "   - Ngày nhập: %s\n" +
+                        "   - Số lượng nhập: %s\n" +
+                        "   - Số lượng còn: %s\n" +
+                        "   - Đơn giá: %s\n" +
+                        "   - Trạng thái kiểm nghiệm: %s\n" +
+                        "   - Trạng thái sử dụng: %s\n" +
+                        "   - Ghi chú: %s\n",
+                id,
+                batchNumber,
+                internalBatchCode,
+                manufacturerBatchNumber,
+                manufacturingDate,
+                expiryDate,
+                receivedDate,
+                receivedQuantity,
+                currentQuantity,
+                unitPrice,
+                testStatus != null ? testStatus.name() : "Chưa kiểm nghiệm",
+                usageStatus != null ? usageStatus.name() : "Chưa xác định",
+                notes
+        );
+    }
+
 }

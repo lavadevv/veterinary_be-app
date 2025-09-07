@@ -35,6 +35,13 @@ public class WarehouseServiceImpl implements WarehouseService {
         return warehouseRepository.findAll(specification, pageRequest);
     }
 
+    public List<WarehouseDto> getAllWarehouses() {
+        List<Warehouse> warehouses = warehouseRepository.findAll();
+        return warehouses.stream()
+                .map(warehouseMapper::toWarehouseDto)
+                .collect(java.util.stream.Collectors.toList());
+    }
+
     @Override
     public WarehouseDto selectWarehouseById(Long id) {
         Optional<Warehouse> warehouseOptional = warehouseRepository.findById(String.valueOf(id));

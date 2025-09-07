@@ -1,6 +1,7 @@
 package ext.vnua.veterinary_beapp.modules.material.repository;
 
 import ext.vnua.veterinary_beapp.modules.material.model.Supplier;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
@@ -13,6 +14,9 @@ import java.util.Optional;
 
 @Repository
 public interface SupplierRepository extends JpaRepository<Supplier, Long>, JpaSpecificationExecutor<Supplier> {
+
+    @EntityGraph(attributePaths = {"materials"})
+    Optional<Supplier> findById(Long id);
 
     // Tìm theo mã nhà cung cấp
     Optional<Supplier> findBySupplierCode(String supplierCode);

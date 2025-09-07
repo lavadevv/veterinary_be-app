@@ -21,7 +21,7 @@ public class Location extends AuditableEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "warehouse_id", nullable = false)
     private Warehouse warehouse;
 
@@ -47,6 +47,22 @@ public class Location extends AuditableEntity {
     private Boolean isAvailable = true;
 
     // Relationships
-    @OneToMany(mappedBy = "location", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "location", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private List<MaterialBatch> materialBatches;
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("\n=== VỊ TRÍ TRONG KHO ===\n");
+        sb.append("Mã vị trí     : ").append(locationCode).append("\n");
+        sb.append("Thuộc kho     : ").append(warehouse != null ? warehouse.getWarehouseName() : "Không xác định").append("\n");
+        sb.append("Kệ            : ").append(shelf != null ? shelf : "Không rõ").append("\n");
+        sb.append("Tầng          : ").append(floor != null ? floor : "Không rõ").append("\n");
+        sb.append("Chi tiết vị trí: ").append(positionDetail != null ? positionDetail : "Không có").append("\n");
+        sb.append("Sức chứa tối đa: ").append(maxCapacity != null ? maxCapacity + " đơn vị" : "Chưa xác định").append("\n");
+        sb.append("Đang chứa     : ").append(currentCapacity != null ? currentCapacity + " đơn vị" : "0").append("\n");
+        sb.append("Trạng thái    : ").append(isAvailable ? "Có sẵn để sử dụng" : "Đang đầy/không sử dụng được").append("\n");
+        return sb.toString();
+    }
+
 }

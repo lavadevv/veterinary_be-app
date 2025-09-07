@@ -21,4 +21,37 @@ public class SupplierDto {
     private String countryOfOrigin;
     private Boolean isActive;
     private String notes;
+
+    @Override
+    public String toString() {
+        return String.format(
+                "Nhà cung cấp:\n" +
+                        "   - ID: %d\n" +
+                        "   - Mã: %s\n" +
+                        "   - Tên: %s\n" +
+                        "   - Nhà sản xuất: %s\n" +
+                        "   - Nhà phân phối: %s\n" +
+                        "   - Địa chỉ: %s\n" +
+                        "   - Điện thoại: %s\n" +
+                        "   - Email: %s\n" +
+                        "   - Người liên hệ: %s\n" +
+                        "   - Giấy chứng nhận GMP: %s (hết hạn: %s)\n" +
+                        "   - Xuất xứ: %s\n" +
+                        "   - Trạng thái: %s\n",
+                id,
+                supplierCode,
+                supplierName,
+                manufacturerName,
+                distributorName,
+                address,
+                phone,
+                email,
+                contactPerson,
+                gmpCertificate,
+                gmpExpiryDate != null ? gmpExpiryDate.toString() : "Không rõ",
+                countryOfOrigin,
+                Boolean.TRUE.equals(isActive) ? "Đang hợp tác" : "Ngừng hợp tác"
+        );
+    }
+
 }

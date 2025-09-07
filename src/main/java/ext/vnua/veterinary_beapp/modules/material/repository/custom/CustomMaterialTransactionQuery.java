@@ -8,6 +8,7 @@ import ext.vnua.veterinary_beapp.modules.material.model.MaterialBatch;
 import ext.vnua.veterinary_beapp.modules.material.model.Material;
 import ext.vnua.veterinary_beapp.modules.users.model.User;
 import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -44,15 +45,25 @@ public class CustomMaterialTransactionQuery {
         return ((root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
 
+            // fetch để tránh LazyInitializationException
+            if (query.getResultType() != Long.class && query.getResultType() != long.class) {
+                var batchFetch = root.fetch("materialBatch", JoinType.LEFT);
+                var materialFetch = batchFetch.fetch("material", JoinType.LEFT);
+                materialFetch.fetch("supplier", JoinType.LEFT);
+                var locationFetch = batchFetch.fetch("location", JoinType.LEFT);
+                locationFetch.fetch("warehouse", JoinType.LEFT);
+                query.distinct(true);
+            }
+
+            // join riêng để build điều kiện
+            Join<MaterialTransaction, MaterialBatch> batchJoin = root.join("materialBatch", JoinType.LEFT);
+            Join<MaterialBatch, Material> materialJoin = batchJoin.join("material", JoinType.LEFT);
+
             if (param.keywords != null && !param.keywords.trim().isEmpty()) {
                 Predicate referenceDocPredicate = CriteriaBuilderUtil.createPredicateForSearchInsensitive(
                         root, criteriaBuilder, param.keywords, "referenceDocument");
                 Predicate productionOrderPredicate = CriteriaBuilderUtil.createPredicateForSearchInsensitive(
                         root, criteriaBuilder, param.keywords, "productionOrderId");
-
-                // Search in material name
-                Join<MaterialTransaction, MaterialBatch> batchJoin = root.join("materialBatch");
-                Join<MaterialBatch, Material> materialJoin = batchJoin.join("material");
                 Predicate materialNamePredicate = CriteriaBuilderUtil.createPredicateForSearchInsensitive(
                         materialJoin, criteriaBuilder, param.keywords, "materialName");
 
@@ -60,13 +71,10 @@ public class CustomMaterialTransactionQuery {
             }
 
             if (param.materialBatchId != null) {
-                Join<MaterialTransaction, MaterialBatch> batchJoin = root.join("materialBatch");
                 predicates.add(criteriaBuilder.equal(batchJoin.get("id"), param.materialBatchId));
             }
 
             if (param.materialId != null) {
-                Join<MaterialTransaction, MaterialBatch> batchJoin = root.join("materialBatch");
-                Join<MaterialBatch, Material> materialJoin = batchJoin.join("material");
                 predicates.add(criteriaBuilder.equal(materialJoin.get("id"), param.materialId));
             }
 
@@ -75,12 +83,12 @@ public class CustomMaterialTransactionQuery {
             }
 
             if (param.createdById != null) {
-                Join<MaterialTransaction, User> createdByJoin = root.join("createdBy");
+                Join<MaterialTransaction, User> createdByJoin = root.join("createdBy", JoinType.LEFT);
                 predicates.add(criteriaBuilder.equal(createdByJoin.get("id"), param.createdById));
             }
 
             if (param.approvedById != null) {
-                Join<MaterialTransaction, User> approvedByJoin = root.join("approvedBy");
+                Join<MaterialTransaction, User> approvedByJoin = root.join("approvedBy", JoinType.LEFT);
                 predicates.add(criteriaBuilder.equal(approvedByJoin.get("id"), param.approvedById));
             }
 
@@ -88,7 +96,7 @@ public class CustomMaterialTransactionQuery {
                 predicates.add(criteriaBuilder.equal(root.get("productionOrderId"), param.productionOrderId));
             }
 
-            // Filter by transaction date range
+            // transactionDate filter
             if (param.transactionFromDate != null && param.transactionToDate != null) {
                 predicates.add(criteriaBuilder.between(root.get("transactionDate"),
                         param.transactionFromDate, param.transactionToDate));
@@ -98,7 +106,7 @@ public class CustomMaterialTransactionQuery {
                 predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get("transactionDate"), param.transactionToDate));
             }
 
-            // Filter by quantity range
+            // quantity filter
             if (param.minQuantity != null && param.maxQuantity != null) {
                 predicates.add(criteriaBuilder.between(root.get("quantity"), param.minQuantity, param.maxQuantity));
             } else if (param.minQuantity != null) {
@@ -107,7 +115,7 @@ public class CustomMaterialTransactionQuery {
                 predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get("quantity"), param.maxQuantity));
             }
 
-            // Sorting
+            // sorting
             if (param.sortField != null && !param.sortField.equals("")) {
                 if (param.sortType != null && param.sortType.equals(Constant.SortType.ASC)) {
                     query.orderBy(criteriaBuilder.asc(root.get(param.sortField)));
