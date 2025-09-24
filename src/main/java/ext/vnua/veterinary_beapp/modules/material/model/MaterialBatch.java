@@ -114,7 +114,33 @@ public class MaterialBatch extends AuditableEntity {
         return sb.toString();
     }
 
+    // thêm 2 trường bổ sung để theo dõi chi tiết hơn
+    @Column(name = "reserved_quantity", precision = 15, scale = 3)
+    private BigDecimal reservedQuantity = BigDecimal.ZERO;
 
+    @Column(name = "available_quantity", precision = 15, scale = 3)
+    private BigDecimal availableQuantity;
+
+
+    // trong class MaterialBatch
+    @PrePersist
+    public void prePersist() {
+        if (reservedQuantity == null) reservedQuantity = java.math.BigDecimal.ZERO;
+        if (availableQuantity == null) {
+            // nếu chưa set, mặc định available = current - reserved (>= 0)
+            availableQuantity = (currentQuantity != null ? currentQuantity : java.math.BigDecimal.ZERO)
+                    .subtract(reservedQuantity);
+            if (availableQuantity.signum() < 0) availableQuantity = java.math.BigDecimal.ZERO;
+        }
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        if (reservedQuantity == null) reservedQuantity = java.math.BigDecimal.ZERO;
+        if (availableQuantity == null) availableQuantity = java.math.BigDecimal.ZERO;
+        // đảm bảo không âm
+        if (availableQuantity.signum() < 0) availableQuantity = java.math.BigDecimal.ZERO;
+    }
 
 
 }

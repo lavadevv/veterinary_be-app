@@ -91,4 +91,12 @@ public interface MaterialBatchRepository extends JpaRepository<MaterialBatch, Lo
     List<MaterialBatch> findOldestUsableBatches(@Param("materialId") Long materialId,
                                                 @Param("approvedStatus") TestStatus approvedStatus,
                                                 @Param("availableStatus") UsageStatus availableStatus);
+
+    @Query("SELECT mb FROM MaterialBatch mb " +
+            "WHERE mb.material.id = :materialId AND mb.availableQuantity > 0 " +
+            "ORDER BY mb.expiryDate ASC, mb.receivedDate ASC")
+    List<MaterialBatch> findAvailableByMaterialFifo(@Param("materialId") Long materialId);
+
+    List<MaterialBatch> findByMaterialIdAndTestStatusAndUsageStatusAndExpiryDateGreaterThanEqualOrderByExpiryDateAscManufacturingDateAscIdAsc(
+            Long materialId, TestStatus testStatus, UsageStatus usageStatus, LocalDate today);
 }

@@ -10,6 +10,7 @@ import ext.vnua.veterinary_beapp.modules.material.dto.request.material.UpdateMat
 import ext.vnua.veterinary_beapp.modules.material.mapper.MaterialMapper;
 import ext.vnua.veterinary_beapp.modules.material.model.Material;
 import ext.vnua.veterinary_beapp.modules.material.model.Supplier;
+import ext.vnua.veterinary_beapp.modules.material.repository.MaterialBatchRepository;
 import ext.vnua.veterinary_beapp.modules.material.repository.MaterialRepository;
 import ext.vnua.veterinary_beapp.modules.material.repository.SupplierRepository;
 import ext.vnua.veterinary_beapp.modules.material.repository.custom.CustomMaterialQuery;
@@ -21,6 +22,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -30,6 +32,7 @@ import java.util.Optional;
 public class MaterialServiceImpl implements MaterialService {
     private final MaterialRepository materialRepository;
     private final SupplierRepository supplierRepository;
+    private final MaterialBatchRepository materialBatchRepository;
     private final MaterialMapper materialMapper;
 
     @Override
@@ -301,4 +304,19 @@ public class MaterialServiceImpl implements MaterialService {
                 .map(materialMapper::toMaterialDto)
                 .collect(java.util.stream.Collectors.toList());
     }
+
+    @Override
+    @Transactional
+    public void syncMaterialStock(Long materialId) {
+        BigDecimal totalQuantity = materialBatchRepository.getTotalQuantityByMaterial(materialId);
+        Double newStock = totalQuantity != null ? totalQuantity.doubleValue() : 0.0;
+
+        Optional<Material> materialOptional = materialRepository.findById(materialId);
+        if (materialOptional.isPresent()) {
+            Material material = materialOptional.get();
+            material.setCurrentStock(newStock);
+            materialRepository.saveAndFlush(material);
+        }
+    }
+
 }

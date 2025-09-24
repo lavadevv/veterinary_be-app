@@ -71,7 +71,7 @@ public class LocationServiceImpl implements LocationService {
     @Auditable(action = AuditAction.CREATE, entityName = "Location", description = "Tạo mới vị trí")
     public LocationDto createLocation(CreateLocationRequest request) {
         // Validate warehouse exists
-        Warehouse warehouse = warehouseRepository.findById(String.valueOf(request.getWarehouseId()))
+        Warehouse warehouse = warehouseRepository.findById(request.getWarehouseId())
                 .orElseThrow(() -> new DataExistException("Kho không tồn tại"));
 
         // Validate location code is unique within warehouse
@@ -119,7 +119,7 @@ public class LocationServiceImpl implements LocationService {
         Location existingLocation = locationOptional.get();
 
         // Validate warehouse exists if changed
-        Warehouse warehouse = warehouseRepository.findById(String.valueOf(request.getWarehouseId()))
+        Warehouse warehouse = warehouseRepository.findById(request.getWarehouseId())
                 .orElseThrow(() -> new DataExistException("Kho không tồn tại"));
 
         // Validate location code is unique within warehouse (excluding current location)

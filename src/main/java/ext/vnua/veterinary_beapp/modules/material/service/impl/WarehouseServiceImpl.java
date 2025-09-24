@@ -44,7 +44,7 @@ public class WarehouseServiceImpl implements WarehouseService {
 
     @Override
     public WarehouseDto selectWarehouseById(Long id) {
-        Optional<Warehouse> warehouseOptional = warehouseRepository.findById(String.valueOf(id));
+        Optional<Warehouse> warehouseOptional = warehouseRepository.findById(id);
         if (warehouseOptional.isEmpty()) {
             throw new DataExistException("Kho không tồn tại");
         }
@@ -103,7 +103,7 @@ public class WarehouseServiceImpl implements WarehouseService {
     @Transactional
     @Auditable(action = AuditAction.UPDATE, entityName = "Warehouse", description = "Cập nhật kho")
     public WarehouseDto updateWarehouse(UpdateWarehouseRequest request) {
-        Optional<Warehouse> warehouseOptional = warehouseRepository.findById(String.valueOf(request.getId()));
+        Optional<Warehouse> warehouseOptional = warehouseRepository.findById(request.getId());
         if (warehouseOptional.isEmpty()) {
             throw new DataExistException("Kho không tồn tại");
         }
@@ -139,7 +139,7 @@ public class WarehouseServiceImpl implements WarehouseService {
     @Override
     @Auditable(action = AuditAction.DELETE, entityName = "Warehouse", description = "Xóa kho")
     public void deleteWarehouse(Long id) {
-        Optional<Warehouse> warehouseOptional = warehouseRepository.findById(String.valueOf(id));
+        Optional<Warehouse> warehouseOptional = warehouseRepository.findById(id);
         if (warehouseOptional.isEmpty()) {
             throw new DataExistException("Kho không tồn tại");
         }
@@ -152,7 +152,7 @@ public class WarehouseServiceImpl implements WarehouseService {
         }
 
         try {
-            warehouseRepository.deleteById(String.valueOf(id));
+            warehouseRepository.deleteById(id);
         } catch (Exception e) {
             throw new MyCustomException("Có lỗi xảy ra trong quá trình xóa kho");
         }
@@ -163,7 +163,7 @@ public class WarehouseServiceImpl implements WarehouseService {
     public List<WarehouseDto> deleteAllIdWarehouses(List<Long> ids) {
         List<WarehouseDto> warehouseDtos = new ArrayList<>();
         for (Long id : ids) {
-            Optional<Warehouse> optionalWarehouse = warehouseRepository.findById(String.valueOf(id));
+            Optional<Warehouse> optionalWarehouse = warehouseRepository.findById(id);
             if (optionalWarehouse.isPresent()) {
                 Warehouse warehouse = optionalWarehouse.get();
 
@@ -184,7 +184,7 @@ public class WarehouseServiceImpl implements WarehouseService {
     @Override
     @Transactional
     public void toggleActiveStatus(Long warehouseId) {
-        Optional<Warehouse> warehouseOptional = warehouseRepository.findById(String.valueOf(warehouseId));
+        Optional<Warehouse> warehouseOptional = warehouseRepository.findById(warehouseId);
         if (warehouseOptional.isEmpty()) {
             throw new DataExistException("Kho không tồn tại");
         }

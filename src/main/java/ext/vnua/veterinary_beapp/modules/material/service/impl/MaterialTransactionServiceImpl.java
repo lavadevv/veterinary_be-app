@@ -26,6 +26,7 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -80,6 +81,58 @@ public class MaterialTransactionServiceImpl implements MaterialTransactionServic
                 .collect(java.util.stream.Collectors.toList());
     }
 
+//    @Override
+//    @Transactional
+//    @Auditable(action = AuditAction.CREATE, entityName = "MaterialTransaction", description = "Tạo mới giao dịch vật liệu")
+//    public MaterialTransactionDto createMaterialTransaction(CreateMaterialTransactionRequest request) {
+//        // Validate material batch exists
+//        MaterialBatch materialBatch = materialBatchRepository.findById(request.getMaterialBatchId())
+//                .orElseThrow(() -> new DataExistException("Batch vật liệu không tồn tại"));
+//
+//        // Validate locations if provided
+//        Location fromLocation = null;
+//        Location toLocation = null;
+//
+//        if (request.getFromLocationId() != null) {
+//            fromLocation = locationRepository.findById(request.getFromLocationId())
+//                    .orElseThrow(() -> new DataExistException("Vị trí xuất không tồn tại"));
+//        }
+//
+//        if (request.getToLocationId() != null) {
+//            toLocation = locationRepository.findById(request.getToLocationId())
+//                    .orElseThrow(() -> new DataExistException("Vị trí nhập không tồn tại"));
+//        }
+//
+//        // Validate approved by user if provided
+//        User approvedBy = null;
+//        if (request.getApprovedById() != null) {
+//            approvedBy = userRepository.findById(request.getApprovedById())
+//                    .orElseThrow(() -> new DataExistException("Người phê duyệt không tồn tại"));
+//        }
+//
+//        // Business validation
+//        validateTransactionBusiness(request, materialBatch);
+//
+//        try {
+//            MaterialTransaction transaction = materialTransactionMapper.toCreateMaterialTransaction(request);
+//            transaction.setMaterialBatch(materialBatch);
+//            transaction.setFromLocation(fromLocation);
+//            transaction.setToLocation(toLocation);
+//            transaction.setApprovedBy(approvedBy);
+//
+//            // Calculate total value if not provided
+//            if (transaction.getTotalValue() == null &&
+//                    transaction.getUnitPrice() != null &&
+//                    transaction.getQuantity() != null) {
+//                transaction.setTotalValue(transaction.getUnitPrice().multiply(transaction.getQuantity()));
+//            }
+//
+//            return materialTransactionMapper.toMaterialTransactionDto(
+//                    materialTransactionRepository.saveAndFlush(transaction));
+//        } catch (Exception e) {
+//            throw new MyCustomException("Có lỗi xảy ra trong quá trình thêm giao dịch vật liệu");
+//        }
+//    }
     @Override
     @Transactional
     @Auditable(action = AuditAction.CREATE, entityName = "MaterialTransaction", description = "Tạo mới giao dịch vật liệu")
@@ -126,6 +179,34 @@ public class MaterialTransactionServiceImpl implements MaterialTransactionServic
                 transaction.setTotalValue(transaction.getUnitPrice().multiply(transaction.getQuantity()));
             }
 
+            // 🔥 CẬP NHẬT STOCK THEO LOẠI GIAO DỊCH
+            BigDecimal qty = transaction.getQuantity();
+            switch (transaction.getTransactionType()) {
+                case NHAP_KHO -> {
+                    materialBatch.setCurrentQuantity(materialBatch.getCurrentQuantity().add(qty));
+                    if (toLocation != null) {
+                        toLocation.setCurrentCapacity(toLocation.getCurrentCapacity() + qty.doubleValue());
+                    }
+                }
+                case XUAT_KHO, TRA_HANG, HUY_BO -> {
+                    materialBatch.setCurrentQuantity(materialBatch.getCurrentQuantity().subtract(qty));
+                    if (fromLocation != null) {
+                        fromLocation.setCurrentCapacity(Math.max(0, fromLocation.getCurrentCapacity() - qty.doubleValue()));
+                    }
+                }
+                case DIEU_CHINH -> {
+                    // Cho phép số âm hoặc dương
+                    materialBatch.setCurrentQuantity(materialBatch.getCurrentQuantity().add(qty));
+                    if (fromLocation != null) {
+                        fromLocation.setCurrentCapacity(Math.max(0, fromLocation.getCurrentCapacity() + qty.doubleValue()));
+                    }
+                }
+            }
+
+            materialBatchRepository.save(materialBatch);
+            if (fromLocation != null) locationRepository.save(fromLocation);
+            if (toLocation != null) locationRepository.save(toLocation);
+
             return materialTransactionMapper.toMaterialTransactionDto(
                     materialTransactionRepository.saveAndFlush(transaction));
         } catch (Exception e) {
@@ -133,22 +214,76 @@ public class MaterialTransactionServiceImpl implements MaterialTransactionServic
         }
     }
 
+//    @Override
+//    @Transactional
+//    @Auditable(action = AuditAction.UPDATE, entityName = "MaterialTransaction", description = "Cập nhật giao dịch vật liệu")
+//    public MaterialTransactionDto updateMaterialTransaction(UpdateMaterialTransactionRequest request) {
+//        Optional<MaterialTransaction> transactionOptional = materialTransactionRepository.findById(request.getId());
+//        if (transactionOptional.isEmpty()) {
+//            throw new DataExistException("Giao dịch vật liệu không tồn tại");
+//        }
+//
+//        MaterialTransaction existingTransaction = transactionOptional.get();
+//
+//        // Validate material batch exists
+//        MaterialBatch materialBatch = materialBatchRepository.findById(request.getMaterialBatchId())
+//                .orElseThrow(() -> new DataExistException("Batch vật liệu không tồn tại"));
+//
+//        // Validate locations if provided
+//        Location fromLocation = null;
+//        Location toLocation = null;
+//
+//        if (request.getFromLocationId() != null) {
+//            fromLocation = locationRepository.findById(request.getFromLocationId())
+//                    .orElseThrow(() -> new DataExistException("Vị trí xuất không tồn tại"));
+//        }
+//
+//        if (request.getToLocationId() != null) {
+//            toLocation = locationRepository.findById(request.getToLocationId())
+//                    .orElseThrow(() -> new DataExistException("Vị trí nhập không tồn tại"));
+//        }
+//
+//        // Validate approved by user if provided
+//        User approvedBy = null;
+//        if (request.getApprovedById() != null) {
+//            approvedBy = userRepository.findById(request.getApprovedById())
+//                    .orElseThrow(() -> new DataExistException("Người phê duyệt không tồn tại"));
+//        }
+//
+//        // Business validation
+//        validateTransactionBusiness(request, materialBatch);
+//
+//        try {
+//            materialTransactionMapper.updateMaterialTransactionFromRequest(request, existingTransaction);
+//            existingTransaction.setMaterialBatch(materialBatch);
+//            existingTransaction.setFromLocation(fromLocation);
+//            existingTransaction.setToLocation(toLocation);
+//            existingTransaction.setApprovedBy(approvedBy);
+//
+//            // Calculate total value if not provided
+//            if (existingTransaction.getTotalValue() == null &&
+//                    existingTransaction.getUnitPrice() != null &&
+//                    existingTransaction.getQuantity() != null) {
+//                existingTransaction.setTotalValue(existingTransaction.getUnitPrice().multiply(existingTransaction.getQuantity()));
+//            }
+//
+//            return materialTransactionMapper.toMaterialTransactionDto(
+//                    materialTransactionRepository.saveAndFlush(existingTransaction));
+//        } catch (Exception e) {
+//            throw new MyCustomException("Có lỗi xảy ra trong quá trình cập nhật giao dịch vật liệu");
+//        }
+//    }
+
     @Override
     @Transactional
     @Auditable(action = AuditAction.UPDATE, entityName = "MaterialTransaction", description = "Cập nhật giao dịch vật liệu")
     public MaterialTransactionDto updateMaterialTransaction(UpdateMaterialTransactionRequest request) {
-        Optional<MaterialTransaction> transactionOptional = materialTransactionRepository.findById(request.getId());
-        if (transactionOptional.isEmpty()) {
-            throw new DataExistException("Giao dịch vật liệu không tồn tại");
-        }
+        MaterialTransaction existingTransaction = materialTransactionRepository.findById(request.getId())
+                .orElseThrow(() -> new DataExistException("Giao dịch vật liệu không tồn tại"));
 
-        MaterialTransaction existingTransaction = transactionOptional.get();
-
-        // Validate material batch exists
         MaterialBatch materialBatch = materialBatchRepository.findById(request.getMaterialBatchId())
                 .orElseThrow(() -> new DataExistException("Batch vật liệu không tồn tại"));
 
-        // Validate locations if provided
         Location fromLocation = null;
         Location toLocation = null;
 
@@ -162,36 +297,46 @@ public class MaterialTransactionServiceImpl implements MaterialTransactionServic
                     .orElseThrow(() -> new DataExistException("Vị trí nhập không tồn tại"));
         }
 
-        // Validate approved by user if provided
         User approvedBy = null;
         if (request.getApprovedById() != null) {
             approvedBy = userRepository.findById(request.getApprovedById())
                     .orElseThrow(() -> new DataExistException("Người phê duyệt không tồn tại"));
         }
 
-        // Business validation
         validateTransactionBusiness(request, materialBatch);
 
         try {
+            // Trừ lại ảnh hưởng cũ trước khi update
+            BigDecimal oldQty = existingTransaction.getQuantity();
+            switch (existingTransaction.getTransactionType()) {
+                case NHAP_KHO -> materialBatch.setCurrentQuantity(materialBatch.getCurrentQuantity().subtract(oldQty));
+                case XUAT_KHO, TRA_HANG, HUY_BO -> materialBatch.setCurrentQuantity(materialBatch.getCurrentQuantity().add(oldQty));
+                case DIEU_CHINH -> materialBatch.setCurrentQuantity(materialBatch.getCurrentQuantity().subtract(oldQty));
+            }
+
+            // Update entity
             materialTransactionMapper.updateMaterialTransactionFromRequest(request, existingTransaction);
             existingTransaction.setMaterialBatch(materialBatch);
             existingTransaction.setFromLocation(fromLocation);
             existingTransaction.setToLocation(toLocation);
             existingTransaction.setApprovedBy(approvedBy);
 
-            // Calculate total value if not provided
-            if (existingTransaction.getTotalValue() == null &&
-                    existingTransaction.getUnitPrice() != null &&
-                    existingTransaction.getQuantity() != null) {
-                existingTransaction.setTotalValue(existingTransaction.getUnitPrice().multiply(existingTransaction.getQuantity()));
+            // Re-apply ảnh hưởng mới
+            BigDecimal newQty = existingTransaction.getQuantity();
+            switch (existingTransaction.getTransactionType()) {
+                case NHAP_KHO -> materialBatch.setCurrentQuantity(materialBatch.getCurrentQuantity().add(newQty));
+                case XUAT_KHO, TRA_HANG, HUY_BO -> materialBatch.setCurrentQuantity(materialBatch.getCurrentQuantity().subtract(newQty));
+                case DIEU_CHINH -> materialBatch.setCurrentQuantity(materialBatch.getCurrentQuantity().add(newQty));
             }
 
+            materialBatchRepository.save(materialBatch);
             return materialTransactionMapper.toMaterialTransactionDto(
                     materialTransactionRepository.saveAndFlush(existingTransaction));
         } catch (Exception e) {
             throw new MyCustomException("Có lỗi xảy ra trong quá trình cập nhật giao dịch vật liệu");
         }
     }
+
 
     @Override
     @Auditable(action = AuditAction.DELETE, entityName = "MaterialTransaction", description = "Xóa giao dịch vật liệu")

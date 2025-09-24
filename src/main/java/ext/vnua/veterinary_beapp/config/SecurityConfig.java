@@ -43,7 +43,7 @@ public class SecurityConfig {
 
             config.setAllowedOrigins(Arrays.asList("http://localhost:5173","https://ext.vnua.edu.vn","http://localhost:5174"));
             config.addAllowedHeader("*");
-            config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+            config.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
             UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
             source.registerCorsConfiguration("/**", config);
 //            source.registerCorsConfiguration("/api/**", config);

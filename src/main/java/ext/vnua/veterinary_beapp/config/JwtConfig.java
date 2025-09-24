@@ -1,7 +1,11 @@
 package ext.vnua.veterinary_beapp.config;
 
 import ext.vnua.veterinary_beapp.modules.users.model.User;
-import io.jsonwebtoken.*;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.Jwts;
+import io.jsonwebtoken.MalformedJwtException;
+import io.jsonwebtoken.UnsupportedJwtException;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
 import lombok.AccessLevel;
@@ -26,12 +30,12 @@ public class JwtConfig {
 
     @NonFinal
     @Value("${jwt.key}")
-    private String JWT_SECRET;
+    String JWT_SECRET;
 
     // Thời gian có hiệu lực của chuỗi jwt
-    private final long JWT_EXPIRATION = 24 * 60 * 60 * 1000; // 1 ngày
+    final long JWT_EXPIRATION = 24 * 60 * 60 * 1000; // 1 ngày
 
-    // Tạo ra jwt từ thông tin user
+    // Tạo JWT từ thông tin user
     public String generateToken(User user) {
         SecretKey key = Keys.hmacShaKeyFor(Decoders.BASE64.decode(JWT_SECRET));
         Date issuedAt = new Date();
@@ -42,27 +46,17 @@ public class JwtConfig {
                 .collect(Collectors.joining(","));
 
         return Jwts.builder()
-                .subject(user.getEmail()) //Email nguoi dung
-                .issuedAt(issuedAt) //Thoi gian tao
-                .expiration(expiration) //Thoi gian het han
-                .signWith(key) // SecretKey trong .env
-                .id(UUID.randomUUID().toString()) // ID duy nhat cua token
-                .claim("scope", authorities)  //Quyen
-                .claim("userId", user.getId()) //Id cua user
-                .compact(); // Tao Strin JWT
+                .subject(user.getEmail())               // Email người dùng (subject)
+                .issuedAt(issuedAt)                     // Thời gian tạo
+                .expiration(expiration)                 // Thời gian hết hạn
+                .signWith(key)                          // SecretKey
+                .id(UUID.randomUUID().toString())       // ID duy nhất của token
+                .claim("scope", authorities)            // Quyền
+                .claim("userId", user.getId())          // Id của user (claim riêng)
+                .compact();
     }
 
-    // Lấy thông tin user từ jwt
-    public String getUserIdFromJWT(String token) {
-        SecretKey key = Keys.hmacShaKeyFor(Decoders.BASE64.decode(JWT_SECRET));
-        Claims claims = Jwts.parser()
-                .setSigningKey(key)
-                .build()
-                .parseClaimsJws(token)
-                .getBody();
-        return claims.getSubject();
-    }
-
+    /** Lấy toàn bộ Claims từ JWT */
     public Claims getClaims(String token){
         SecretKey key = Keys.hmacShaKeyFor(Decoders.BASE64.decode(JWT_SECRET));
         return Jwts.parser()
@@ -72,6 +66,7 @@ public class JwtConfig {
                 .getBody();
     }
 
+    /** Xác thực token */
     public boolean validateToken(String authToken) {
         try {
             SecretKey key = Keys.hmacShaKeyFor(Decoders.BASE64.decode(JWT_SECRET));
@@ -90,5 +85,32 @@ public class JwtConfig {
             log.error("JWT claims string is empty.");
         }
         return false;
+    }
+
+    /** Lấy email (subject) từ JWT */
+    public String getUserEmailFromJWT(String token) {
+        return getClaims(token).getSubject();
+    }
+
+    /** Lấy userId (claim) từ JWT; trả Long hoặc null nếu không có/không parse được */
+    public Long getUserIdFromJWTClaims(String token) {
+        Object userIdObj = getClaims(token).get("userId");
+        if (userIdObj == null) return null;
+        if (userIdObj instanceof Number) return ((Number) userIdObj).longValue();
+        try {
+            return Long.parseLong(userIdObj.toString());
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
+    /**
+     * @deprecated Tên hàm dễ gây hiểu nhầm (thực tế trả về subject/email).
+     * Dùng {@link #getUserEmailFromJWT(String)} để lấy email,
+     * hoặc {@link #getUserIdFromJWTClaims(String)} để lấy userId.
+     */
+    @Deprecated
+    public String getUserIdFromJWT(String token) {
+        return getUserEmailFromJWT(token);
     }
 }

@@ -20,6 +20,7 @@ import ext.vnua.veterinary_beapp.modules.material.repository.MaterialBatchReposi
 import ext.vnua.veterinary_beapp.modules.material.repository.MaterialRepository;
 import ext.vnua.veterinary_beapp.modules.material.repository.custom.CustomMaterialBatchQuery;
 import ext.vnua.veterinary_beapp.modules.material.service.MaterialBatchService;
+import ext.vnua.veterinary_beapp.modules.material.service.MaterialService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -40,6 +41,7 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
     private final MaterialBatchRepository materialBatchRepository;
     private final MaterialRepository materialRepository;
     private final LocationRepository locationRepository;
+    private final MaterialService materialService;
     private final MaterialBatchMapper materialBatchMapper;
 
     @Override
@@ -178,6 +180,8 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
                 updateLocationCapacity(location.getId(), savedBatch.getCurrentQuantity().doubleValue());
             }
 
+            materialService.syncMaterialStock(material.getId());
+
             return materialBatchMapper.toMaterialBatchDto(savedBatch);
         } catch (Exception e) {
             throw new MyCustomException("Có lỗi xảy ra trong quá trình thêm lô vật liệu");
@@ -284,6 +288,8 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
                 }
             }
 
+            materialService.syncMaterialStock(material.getId());
+
             return materialBatchMapper.toMaterialBatchDto(savedBatch);
         } catch (Exception e) {
             throw new MyCustomException("Có lỗi xảy ra trong quá trình cập nhật lô vật liệu");
@@ -313,6 +319,8 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
             }
 
             materialBatchRepository.deleteById(id);
+
+            materialService.syncMaterialStock(materialBatch.getMaterial().getId());
         } catch (Exception e) {
             throw new MyCustomException("Có lỗi xảy ra trong quá trình xóa lô vật liệu");
         }
@@ -376,6 +384,8 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
         }
 
         materialBatchRepository.saveAndFlush(materialBatch);
+
+        materialService.syncMaterialStock(materialBatch.getMaterial().getId());
     }
 
     @Override
@@ -604,6 +614,8 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
         }
 
         materialBatchRepository.saveAndFlush(batch);
+
+        materialService.syncMaterialStock(batch.getMaterial().getId());
     }
 
     @Override

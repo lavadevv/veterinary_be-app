@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface WarehouseRepository extends JpaRepository<Warehouse,String>, JpaSpecificationExecutor<Warehouse> {
+public interface WarehouseRepository extends JpaRepository<Warehouse,Long>, JpaSpecificationExecutor<Warehouse> {
     // Find by warehouse code
     Optional<Warehouse> findByWarehouseCode(String warehouseCode);
 

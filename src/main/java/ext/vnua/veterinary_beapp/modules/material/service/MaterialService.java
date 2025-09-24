@@ -33,6 +33,7 @@ public interface MaterialService {
     List<MaterialDto> getLowStockMaterials();
     List<MaterialDto> getMaterialsRequiringColdStorage();
     List<MaterialDto> getActiveMaterials();
+    void syncMaterialStock(Long materialId);
 //    List<MaterialBatchDto> transferBatches(BatchTransferRequest request);
 //    void adjustBatchQuantity(BatchQuantityAdjustmentRequest request);
 //    void markBatchAsExpired(Long batchId);
