@@ -30,18 +30,34 @@ public class ProductFormulaItem {
     @JoinColumn(name = "material_id", nullable = false)
     private Material material;
 
-    @Column(name = "quantity", nullable = false, precision = 12, scale = 6)
-    private BigDecimal quantity; // Định mức nguyên liệu
+    @Column(name = "quantity", precision = 12, scale = 6)
+    private BigDecimal quantity; // Định mức nguyên liệu (nếu dùng)
 
-    @Column(name = "unit", nullable = false)
+    @Column(name = "unit")
     private String unit;
 
     @Column(name = "percentage", precision = 8, scale = 4)
     private BigDecimal percentage; // Tỷ lệ %
 
     @Column(name = "is_critical", nullable = false)
-    private Boolean isCritical = false; // Nguyên liệu quan trọng cần kiểm soát đặc biệt
+    private Boolean isCritical = false;
 
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
+
+    /* ===== NEW: label & calculated fields ===== */
+    @Column(name = "label_amount", precision = 18, scale = 6)
+    private BigDecimal labelAmount;              // Nhập từ người dùng (optional)
+
+    @Column(name = "label_unit", length = 20)
+    private String labelUnit;
+
+    @Column(name = "formula_content_amount", precision = 18, scale = 6)
+    private BigDecimal formulaContentAmount;     // mg (đã quy đổi)
+
+    @Column(name = "formula_content_unit", length = 20)
+    private String formulaContentUnit;           // luôn "mg" trong Hướng B
+
+    @Column(name = "achieved_percent", precision = 7, scale = 1)
+    private BigDecimal achievedPercent;          // % đạt (làm tròn 1 số)
 }

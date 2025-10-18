@@ -1,0 +1,10 @@
+/* Tailwind entry (utilities only). Extend with small custom utilities if needed. */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom scrollbar (non-intrusive) */
+*::-webkit-scrollbar { height: 10px; width: 10px; }
+*::-webkit-scrollbar-thumb { background-color: rgba(17, 24, 39, 0.25); border-radius: 9999px; }
+*::-webkit-scrollbar-track { background-color: transparent; }
+

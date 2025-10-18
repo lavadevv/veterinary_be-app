@@ -3,7 +3,8 @@ package ext.vnua.veterinary_beapp.modules.material.dto.entity;
 import ext.vnua.veterinary_beapp.modules.material.enums.MaterialForm;
 import ext.vnua.veterinary_beapp.modules.material.enums.MaterialType;
 import lombok.Data;
-import java.time.LocalDateTime;
+
+import java.math.BigDecimal;
 
 @Data
 public class MaterialDto {
@@ -14,18 +15,18 @@ public class MaterialDto {
     private MaterialType materialType;
     private MaterialForm materialForm;
     private String activeIngredient;
-    private Double purityPercentage;
-    private Double iuPerGram;
+    private BigDecimal purityPercentage;
+    private BigDecimal iuPerGram;
     private String color;
     private String odor;
-    private Double moistureContent;
-    private Double viscosity;
+    private BigDecimal moistureContent;
+    private BigDecimal viscosity;
     private String unitOfMeasure;
     private String standardApplied;
     private SupplierDto supplierDto;
-    private Double minimumStockLevel;
-    private Double currentStock;
-    private Double fixedPrice;
+    private BigDecimal minimumStockLevel;
+    private BigDecimal currentStock;
+    private BigDecimal fixedPrice;
     private Boolean requiresColdStorage;
     private String specialHandling;
     private Boolean isActive;
@@ -33,33 +34,21 @@ public class MaterialDto {
 
     @Override
     public String toString() {
-        return String.format(
-                "Vật tư:\n" +
-                        "   - ID: %d\n" +
-                        "   - Mã: %s\n" +
-                        "   - Tên: %s\n" +
-                        "   - Loại: %s\n" +
-                        "   - Dạng: %s\n" +
-                        "   - Hoạt chất: %s\n" +
-                        "   - Độ tinh khiết: %.2f%%\n" +
-                        "   - Đơn vị tính: %s\n" +
-                        "   - Nhà cung cấp: %s\n" +
-                        "   - Tồn kho hiện tại: %.2f\n" +
-                        "   - Mức tồn kho tối thiểu: %.2f\n" +
-                        "   - Trạng thái: %s\n",
-                id,
-                materialCode,
-                materialName,
-                materialType != null ? materialType.name() : "Chưa xác định",
-                materialForm != null ? materialForm.name() : "Chưa xác định",
-                activeIngredient,
-                purityPercentage != null ? purityPercentage : 0.0,
-                unitOfMeasure,
-                supplierDto != null ? supplierDto.getSupplierName() : "Không rõ",
-                currentStock != null ? currentStock : 0.0,
-                minimumStockLevel != null ? minimumStockLevel : 0.0,
-                Boolean.TRUE.equals(isActive) ? "Đang sử dụng" : "Ngừng sử dụng"
-        );
+        String purityStr = purityPercentage != null ? purityPercentage.stripTrailingZeros().toPlainString() : "0";
+        String currStr   = currentStock != null ? currentStock.stripTrailingZeros().toPlainString() : "0";
+        String minStr    = minimumStockLevel != null ? minimumStockLevel.stripTrailingZeros().toPlainString() : "0";
+        return "Vật tư:\n" +
+                "   - ID: " + id + "\n" +
+                "   - Mã: " + materialCode + "\n" +
+                "   - Tên: " + materialName + "\n" +
+                "   - Loại: " + (materialType != null ? materialType.name() : "Chưa xác định") + "\n" +
+                "   - Dạng: " + (materialForm != null ? materialForm.name() : "Chưa xác định") + "\n" +
+                "   - Hoạt chất: " + (activeIngredient != null ? activeIngredient : "") + "\n" +
+                "   - Độ tinh khiết: " + purityStr + "%\n" +
+                "   - Đơn vị tính: " + unitOfMeasure + "\n" +
+                "   - Nhà cung cấp: " + (supplierDto != null ? supplierDto.getSupplierName() : "Không rõ") + "\n" +
+                "   - Tồn kho hiện tại: " + currStr + "\n" +
+                "   - Mức tồn kho tối thiểu: " + minStr + "\n" +
+                "   - Trạng thái: " + (Boolean.TRUE.equals(isActive) ? "Đang sử dụng" : "Ngừng sử dụng") + "\n";
     }
-
 }

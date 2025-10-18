@@ -5,13 +5,14 @@ import ext.vnua.veterinary_beapp.modules.material.dto.entity.MaterialDto;
 import ext.vnua.veterinary_beapp.modules.material.dto.request.material.CreateMaterialRequest;
 import ext.vnua.veterinary_beapp.modules.material.dto.request.material.GetMaterialRequest;
 import ext.vnua.veterinary_beapp.modules.material.dto.request.material.UpdateMaterialRequest;
+import ext.vnua.veterinary_beapp.modules.material.enums.MaterialType;
 import ext.vnua.veterinary_beapp.modules.material.mapper.MaterialMapper;
 import ext.vnua.veterinary_beapp.modules.material.model.Material;
-import ext.vnua.veterinary_beapp.modules.material.repository.custom.CustomMaterialQuery;
 import ext.vnua.veterinary_beapp.modules.material.service.MaterialService;
 import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.Tag;
 import jakarta.validation.Valid;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -19,6 +20,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -33,12 +35,15 @@ public class MaterialController {
     @GetMapping
     @ApiOperation(value = "Lấy tất cả vật liệu")
     public ResponseEntity<?> getAllMaterials(@Valid @ModelAttribute GetMaterialRequest request) {
-        Page<Material> page = materialService.getAllMaterial(request,
-                PageRequest.of(request.getStart(), request.getLimit()));
+        Page<Material> page = materialService.getAllMaterial(
+                request,
+                PageRequest.of(request.getStart(), request.getLimit())
+        );
 
-        return BaseResponse.successListData(page.getContent().stream()
-                .map(materialMapper::toMaterialDto)
-                .collect(Collectors.toList()), (int) page.getTotalElements());
+        return BaseResponse.successListData(
+                page.getContent().stream().map(materialMapper::toMaterialDto).collect(Collectors.toList()),
+                (int) page.getTotalElements()
+        );
     }
 
     @GetMapping("/{id}")
@@ -85,8 +90,7 @@ public class MaterialController {
 
     @PostMapping
     @ApiOperation(value = "Tạo mới material")
-    public ResponseEntity<?> createMaterial(
-            @Valid @RequestBody CreateMaterialRequest request) {
+    public ResponseEntity<?> createMaterial(@Valid @RequestBody CreateMaterialRequest request) {
         MaterialDto materialDto = materialService.createMaterial(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(materialDto);
     }
@@ -109,8 +113,7 @@ public class MaterialController {
 
     @DeleteMapping("/batch")
     @ApiOperation(value = "Xoá nhiều materials")
-    public ResponseEntity<?> deleteMaterials(
-            @RequestBody List<Long> ids) {
+    public ResponseEntity<?> deleteMaterials(@RequestBody List<Long> ids) {
         List<MaterialDto> deletedMaterials = materialService.deleteAllIdMaterials(ids);
         return ResponseEntity.ok(deletedMaterials);
     }
@@ -122,11 +125,40 @@ public class MaterialController {
         return ResponseEntity.ok("Đã thay đổi trạng thái vật liệu");
     }
 
-    @PatchMapping("/{id}/update-stock")
-    @ApiOperation(value = "Cập nhật số lượng tồn kho")
-    public ResponseEntity<?> updateStock(@PathVariable Long id,
-                                         @RequestParam Double newStock) {
-        materialService.updateCurrentStock(id, newStock);
-        return ResponseEntity.ok("Cập nhật tồn kho thành công");
+    /**
+     * DEPRECATED: Giữ để không vỡ FE cũ. Tham số newStock sẽ bị bỏ qua;
+     * hệ thống tự đồng bộ tồn kho từ các lô (MaterialBatch).
+     */
+//    @PatchMapping("/{id}/update-stock")
+//    @ApiOperation(value = "[DEPRECATED] Cập nhật số lượng tồn kho (thực tế sẽ đồng bộ từ các lô)")
+//    public ResponseEntity<?> updateStock(@PathVariable Long id,
+//                                         @RequestParam(required = false) Double newStock) {
+//        materialService.updateCurrentStock(id, newStock);
+//        return ResponseEntity.ok("Đã đồng bộ tồn kho từ các lô");
+//    }
+
+    /**
+     * Khuyến nghị dùng endpoint này: đồng bộ tồn kho tổng từ các lô, không cần tham số.
+     */
+    @PostMapping("/{id}/recompute-stock")
+    @ApiOperation(value = "Đồng bộ tồn kho tổng từ MaterialBatch (khuyến nghị)")
+    public ResponseEntity<?> recomputeStock(@PathVariable Long id) {
+        materialService.syncMaterialStock(id);
+        return ResponseEntity.ok("Đã đồng bộ tồn kho từ các lô");
+    }
+
+
+    @GetMapping("/types")
+    public ResponseEntity<List<EnumItem>> listMaterialTypes() {
+        List<EnumItem> items = Arrays.stream(MaterialType.values())
+                .map(t -> new EnumItem(t.name(), t.getDisplayName()))
+                .toList();
+        return ResponseEntity.ok(items);
+    }
+    @Data
+    @AllArgsConstructor
+    public static class EnumItem {
+        private String code;        // VD: "HOAT_CHAT"
+        private String displayName; // VD: "Hoạt chất"
     }
 }

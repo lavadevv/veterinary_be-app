@@ -9,6 +9,8 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.List;
 
 @Entity
@@ -23,45 +25,45 @@ public class Material extends AuditableEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "material_code", unique = true, nullable = false)
+    @Column(name = "material_code", unique = true, nullable = false, length = 50)
     private String materialCode;
 
-    @Column(name = "material_name", nullable = false)
+    @Column(name = "material_name", nullable = false, length = 255)
     private String materialName;
 
-    @Column(name = "short_name")
+    @Column(name = "short_name", length = 100)
     private String shortName;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "material_type", nullable = false)
+    @Column(name = "material_type", nullable = false, length = 50)
     private MaterialType materialType;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "material_form")
+    @Column(name = "material_form", length = 50)
     private MaterialForm materialForm;
 
     @Column(name = "active_ingredient", columnDefinition = "TEXT")
     private String activeIngredient;
 
-    @Column(name = "purity_percentage")
-    private Double purityPercentage;
+    @Column(name = "purity_percentage", precision = 10, scale = 4)
+    private BigDecimal purityPercentage;
 
-    @Column(name = "iu_per_gram")
-    private Double iuPerGram;
+    @Column(name = "iu_per_gram", precision = 18, scale = 6)
+    private BigDecimal iuPerGram;
 
-    @Column(name = "color")
+    @Column(name = "color", length = 50)
     private String color;
 
-    @Column(name = "odor")
+    @Column(name = "odor", length = 100)
     private String odor;
 
-    @Column(name = "moisture_content")
-    private Double moistureContent;
+    @Column(name = "moisture_content", precision = 10, scale = 4)
+    private BigDecimal moistureContent;
 
-    @Column(name = "viscosity")
-    private Double viscosity;
+    @Column(name = "viscosity", precision = 18, scale = 6)
+    private BigDecimal viscosity;
 
-    @Column(name = "unit_of_measure", nullable = false)
+    @Column(name = "unit_of_measure", nullable = false, length = 20)
     private String unitOfMeasure; // kg, g, ml, L, cái, cuộn, lọ, m2...
 
     @Column(name = "standard_applied", columnDefinition = "TEXT")
@@ -71,14 +73,14 @@ public class Material extends AuditableEntity {
     @JoinColumn(name = "supplier_id")
     private Supplier supplier;
 
-    @Column(name = "minimum_stock_level")
-    private Double minimumStockLevel;
+    @Column(name = "minimum_stock_level", precision = 18, scale = 6)
+    private BigDecimal minimumStockLevel;
 
-    @Column(name = "current_stock")
-    private Double currentStock = 0.0;
+    @Column(name = "current_stock", precision = 18, scale = 6, nullable = false)
+    private BigDecimal currentStock = BigDecimal.ZERO;
 
-    @Column(name = "fixed_price")
-    private Double fixedPrice; // Đơn giá cố định để tính giá thành
+    @Column(name = "fixed_price", precision = 18, scale = 2)
+    private BigDecimal fixedPrice; // Đơn giá cố định/giá chuẩn
 
     @Column(name = "requires_cold_storage", nullable = false)
     private Boolean requiresColdStorage = false;
@@ -95,6 +97,9 @@ public class Material extends AuditableEntity {
     // Relationships
     @OneToMany(mappedBy = "material", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<MaterialBatch> batches;
+
+    @OneToMany(mappedBy = "material", cascade = CascadeType.ALL, orphanRemoval = false)
+    private List<MaterialPriceHistory> priceHistories = new ArrayList<>();
 
     @Override
     public String toString() {
@@ -115,11 +120,11 @@ public class Material extends AuditableEntity {
         }
 
         if (purityPercentage != null) {
-            sb.append("Độ tinh khiết: ").append(purityPercentage).append("%\n");
+            sb.append("Độ tinh khiết: ").append(purityPercentage.stripTrailingZeros().toPlainString()).append("%\n");
         }
 
         if (iuPerGram != null) {
-            sb.append("Hàm lượng (IU/gram): ").append(iuPerGram).append("\n");
+            sb.append("Hàm lượng (IU/gram): ").append(iuPerGram.stripTrailingZeros().toPlainString()).append("\n");
         }
 
         if (color != null) {
@@ -129,10 +134,10 @@ public class Material extends AuditableEntity {
             sb.append("Mùi: ").append(odor).append("\n");
         }
         if (moistureContent != null) {
-            sb.append("Độ ẩm: ").append(moistureContent).append("%\n");
+            sb.append("Độ ẩm: ").append(moistureContent.stripTrailingZeros().toPlainString()).append("%\n");
         }
         if (viscosity != null) {
-            sb.append("Độ nhớt: ").append(viscosity).append("\n");
+            sb.append("Độ nhớt: ").append(viscosity.stripTrailingZeros().toPlainString()).append("\n");
         }
 
         sb.append("Đơn vị tính: ").append(unitOfMeasure).append("\n");
@@ -146,22 +151,24 @@ public class Material extends AuditableEntity {
         }
 
         if (minimumStockLevel != null) {
-            sb.append("Mức tồn kho tối thiểu: ").append(minimumStockLevel).append(" ").append(unitOfMeasure).append("\n");
+            sb.append("Mức tồn kho tối thiểu: ")
+                    .append(minimumStockLevel.stripTrailingZeros().toPlainString()).append(" ").append(unitOfMeasure).append("\n");
         }
 
-        sb.append("Tồn kho hiện tại: ").append(currentStock).append(" ").append(unitOfMeasure).append("\n");
+        sb.append("Tồn kho hiện tại: ")
+                .append(currentStock != null ? currentStock.stripTrailingZeros().toPlainString() : "0").append(" ").append(unitOfMeasure).append("\n");
 
         if (fixedPrice != null) {
-            sb.append("Đơn giá cố định: ").append(fixedPrice).append(" VND\n");
+            sb.append("Đơn giá cố định: ").append(fixedPrice.stripTrailingZeros().toPlainString()).append(" VND\n");
         }
 
-        sb.append("Yêu cầu bảo quản lạnh: ").append(requiresColdStorage ? "Có" : "Không").append("\n");
+        sb.append("Yêu cầu bảo quản lạnh: ").append(Boolean.TRUE.equals(requiresColdStorage) ? "Có" : "Không").append("\n");
 
         if (specialHandling != null) {
             sb.append("Hướng dẫn bảo quản đặc biệt: ").append(specialHandling).append("\n");
         }
 
-        sb.append("Đang sử dụng: ").append(isActive ? "Có" : "Không").append("\n");
+        sb.append("Đang sử dụng: ").append(Boolean.TRUE.equals(isActive) ? "Có" : "Không").append("\n");
 
         if (notes != null) {
             sb.append("Ghi chú: ").append(notes).append("\n");
@@ -169,6 +176,4 @@ public class Material extends AuditableEntity {
 
         return sb.toString();
     }
-
 }
-

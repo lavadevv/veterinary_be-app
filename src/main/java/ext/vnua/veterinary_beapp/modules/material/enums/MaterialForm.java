@@ -6,6 +6,8 @@ public enum MaterialForm {
     HAT("Hạt"),
     VIEN("Viên"),
     BAO_PHIM("Bao phim"),
+    DUNG_DICH("Dung dịch"),
+    NHUA("Nhựa"),
     KHAC("Khác");
 
     private final String displayName;

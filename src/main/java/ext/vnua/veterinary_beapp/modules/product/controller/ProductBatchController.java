@@ -3,15 +3,12 @@ package ext.vnua.veterinary_beapp.modules.product.controller;
 
 import ext.vnua.veterinary_beapp.dto.response.BaseResponse;
 import ext.vnua.veterinary_beapp.modules.product.dto.ProductBatchDto;
-import ext.vnua.veterinary_beapp.modules.product.dto.request.productBatch.CompleteBatchRequest;
-import ext.vnua.veterinary_beapp.modules.product.dto.request.productBatch.GetProductBatchRequest;
-import ext.vnua.veterinary_beapp.modules.product.dto.request.productBatch.IssueBatchRequest;
-import ext.vnua.veterinary_beapp.modules.product.dto.request.productBatch.SimulateConsumptionRequest;
+import ext.vnua.veterinary_beapp.modules.product.dto.request.productBatch.*;
+import ext.vnua.veterinary_beapp.modules.product.dto.response.productBatch.CalcBatchRes;
 import ext.vnua.veterinary_beapp.modules.product.mapper.ProductBatchMapper;
 import ext.vnua.veterinary_beapp.modules.product.model.ProductBatch;
-import ext.vnua.veterinary_beapp.modules.product.servies.ProductBatchService;
+import ext.vnua.veterinary_beapp.modules.product.services.ProductBatchService;
 import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiParam;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -73,5 +70,27 @@ public class ProductBatchController {
     public ResponseEntity<?> close(@PathVariable("id") Long id) {
         batchService.closeBatch(id);
         return ResponseEntity.ok("Đã đóng lô");
+    }
+
+    @ApiOperation(value = "Tính bảng tiêu hao & giá thành theo công thức (BE tính, FE chỉ hiển thị)")
+    @PostMapping("/calc")
+    @PreAuthorize("hasAnyAuthority('ADMIN','PRODUCTION_MANAGER','WAREHOUSE_MANAGER','QC_STAFF','VIEWER')")
+    public ResponseEntity<CalcBatchRes> calc(@Valid @RequestBody CalcBatchReq req) {
+        return ResponseEntity.ok(batchService.calc(req));
+    }
+
+    @ApiOperation(value = "Tạo lô nháp từ công thức (chưa issue NVL)")
+    @PostMapping("/create")
+    @PreAuthorize("hasAnyAuthority('ADMIN','PRODUCTION_MANAGER','WAREHOUSE_MANAGER')")
+    public ResponseEntity<ProductBatchDto> createDraft(@Valid @RequestBody CreateBatchReq req) {
+        return ResponseEntity.ok(batchService.createDraft(req));
+    }
+
+    @ApiOperation(value = "Hủy lệnh sản xuất (unissue) – xả NVL đã reserve")
+    @PutMapping("/cancel")
+    @PreAuthorize("hasAnyAuthority('ADMIN','PRODUCTION_MANAGER','WAREHOUSE_MANAGER')")
+    public ResponseEntity<?> cancel(@Valid @RequestBody CancelBatchRequest req) {
+        batchService.cancelBatch(req);
+        return ResponseEntity.ok("Đã hủy lệnh & xả NVL dự trữ cho batch " + req.getBatchId());
     }
 }

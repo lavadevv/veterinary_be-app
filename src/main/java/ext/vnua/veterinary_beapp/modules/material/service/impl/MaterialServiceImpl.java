@@ -25,7 +25,6 @@ import org.springframework.stereotype.Service;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -43,21 +42,15 @@ public class MaterialServiceImpl implements MaterialService {
 
     @Override
     public MaterialDto selectMaterialById(Long id) {
-        Optional<Material> materialOptional = materialRepository.findById(id);
-        if (materialOptional.isEmpty()) {
-            throw new DataExistException("Vật liệu không tồn tại");
-        }
-        Material material = materialOptional.get();
+        Material material = materialRepository.findById(id)
+                .orElseThrow(() -> new DataExistException("Vật liệu không tồn tại"));
         return materialMapper.toMaterialDto(material);
     }
 
     @Override
     public MaterialDto selectMaterialByCode(String materialCode) {
-        Optional<Material> materialOptional = materialRepository.findByMaterialCode(materialCode);
-        if (materialOptional.isEmpty()) {
-            throw new DataExistException("Mã vật liệu không tồn tại");
-        }
-        Material material = materialOptional.get();
+        Material material = materialRepository.findByMaterialCode(materialCode)
+                .orElseThrow(() -> new DataExistException("Mã vật liệu không tồn tại"));
         return materialMapper.toMaterialDto(material);
     }
 
@@ -73,46 +66,39 @@ public class MaterialServiceImpl implements MaterialService {
     @Transactional
     @Auditable(action = AuditAction.CREATE, entityName = "Material", description = "Tạo mới vật liệu")
     public MaterialDto createMaterial(CreateMaterialRequest request) {
-        // Validate supplier exists if provided
+        // Validate supplier
         Supplier supplier = null;
         if (request.getSupplierId() != null) {
             supplier = supplierRepository.findById(request.getSupplierId())
                     .orElseThrow(() -> new DataExistException("Nhà cung cấp không tồn tại"));
         }
 
-        // Validate material code is unique
-        Optional<Material> existingMaterial = materialRepository.findByMaterialCode(request.getMaterialCode());
-        if (existingMaterial.isPresent()) {
-            throw new DataExistException("Mã vật liệu đã tồn tại");
-        }
+        // Unique checks
+        materialRepository.findByMaterialCode(request.getMaterialCode())
+                .ifPresent(x -> { throw new DataExistException("Mã vật liệu đã tồn tại"); });
 
-        // Validate material name is unique
-        Optional<Material> existingMaterialName = materialRepository.findByMaterialName(request.getMaterialName());
-        if (existingMaterialName.isPresent()) {
-            throw new DataExistException("Tên vật liệu đã tồn tại");
-        }
+        materialRepository.findByMaterialName(request.getMaterialName())
+                .ifPresent(x -> { throw new DataExistException("Tên vật liệu đã tồn tại"); });
 
-        // Validate stock levels
-        if (request.getCurrentStock() != null && request.getCurrentStock() < 0) {
-            throw new MyCustomException("Tồn kho hiện tại không được âm");
-        }
-
-        if (request.getMinimumStockLevel() != null && request.getMinimumStockLevel() < 0) {
+        // Numeric validations (không đụng currentStock vì là derived)
+        if (request.getMinimumStockLevel() != null
+                && request.getMinimumStockLevel().compareTo(BigDecimal.ZERO) < 0) {
             throw new MyCustomException("Mức tồn kho tối thiểu không được âm");
         }
-
-        // Validate price
-        if (request.getFixedPrice() != null && request.getFixedPrice() < 0) {
+        if (request.getFixedPrice() != null && request.getFixedPrice().compareTo(BigDecimal.ZERO) < 0) {
             throw new MyCustomException("Giá cố định không được âm");
         }
-
-        // Validate percentage values
-        if (request.getPurityPercentage() != null && (request.getPurityPercentage() < 0 || request.getPurityPercentage() > 100)) {
-            throw new MyCustomException("Độ tinh khiết phải từ 0 đến 100%");
+        if (request.getPurityPercentage() != null) {
+            if (request.getPurityPercentage().compareTo(BigDecimal.ZERO) < 0
+                    || request.getPurityPercentage().compareTo(BigDecimal.valueOf(100)) > 0) {
+                throw new MyCustomException("Độ tinh khiết phải từ 0 đến 100%");
+            }
         }
-
-        if (request.getMoistureContent() != null && (request.getMoistureContent() < 0 || request.getMoistureContent() > 100)) {
-            throw new MyCustomException("Độ ẩm phải từ 0 đến 100%");
+        if (request.getMoistureContent() != null) {
+            if (request.getMoistureContent().compareTo(BigDecimal.ZERO) < 0
+                    || request.getMoistureContent().compareTo(BigDecimal.valueOf(100)) > 0) {
+                throw new MyCustomException("Độ ẩm phải từ 0 đến 100%");
+            }
         }
 
         try {
@@ -121,13 +107,15 @@ public class MaterialServiceImpl implements MaterialService {
                 material.setSupplier(supplier);
             }
             material.setIsActive(true);
+            // currentStock là derived → mặc định 0 khi mới tạo (chưa có lô)
+            if (material.getCurrentStock() == null) material.setCurrentStock(BigDecimal.ZERO);
 
-            // Set default current stock if not provided
-            if (material.getCurrentStock() == null) {
-                material.setCurrentStock(0.0);
-            }
+            Material saved = materialRepository.saveAndFlush(material);
 
-            return materialMapper.toMaterialDto(materialRepository.saveAndFlush(material));
+            // Đồng bộ tồn kho (thực ra sẽ vẫn = 0 khi mới tạo)
+            syncMaterialStock(saved.getId());
+
+            return materialMapper.toMaterialDto(saved);
         } catch (Exception e) {
             throw new MyCustomException("Có lỗi xảy ra trong quá trình thêm vật liệu");
         }
@@ -137,68 +125,65 @@ public class MaterialServiceImpl implements MaterialService {
     @Transactional
     @Auditable(action = AuditAction.UPDATE, entityName = "Material", description = "Cập nhật vật liệu")
     public MaterialDto updateMaterial(UpdateMaterialRequest request) {
-        Optional<Material> materialOptional = materialRepository.findById(request.getId());
-        if (materialOptional.isEmpty()) {
-            throw new DataExistException("Vật liệu không tồn tại");
-        }
+        Material existingMaterial = materialRepository.findById(request.getId())
+                .orElseThrow(() -> new DataExistException("Vật liệu không tồn tại"));
 
-        Material existingMaterial = materialOptional.get();
-
-        // Validate supplier exists if changed
+        // Validate supplier
         Supplier supplier = null;
         if (request.getSupplierId() != null) {
             supplier = supplierRepository.findById(request.getSupplierId())
                     .orElseThrow(() -> new DataExistException("Nhà cung cấp không tồn tại"));
         }
 
-        // Validate material code is unique (excluding current material)
+        // Unique checks (exclude current)
         if (!existingMaterial.getMaterialCode().equals(request.getMaterialCode())) {
-            Optional<Material> duplicateMaterial = materialRepository
-                    .findByMaterialCodeAndIdNot(request.getMaterialCode(), request.getId());
-            if (duplicateMaterial.isPresent()) {
-                throw new DataExistException("Mã vật liệu đã tồn tại");
-            }
+            materialRepository.findByMaterialCodeAndIdNot(request.getMaterialCode(), request.getId())
+                    .ifPresent(x -> { throw new DataExistException("Mã vật liệu đã tồn tại"); });
         }
-
-        // Validate material name is unique (excluding current material)
         if (!existingMaterial.getMaterialName().equals(request.getMaterialName())) {
-            Optional<Material> duplicateMaterialName = materialRepository
-                    .findByMaterialNameAndIdNot(request.getMaterialName(), request.getId());
-            if (duplicateMaterialName.isPresent()) {
-                throw new DataExistException("Tên vật liệu đã tồn tại");
-            }
+            materialRepository.findByMaterialNameAndIdNot(request.getMaterialName(), request.getId())
+                    .ifPresent(x -> { throw new DataExistException("Tên vật liệu đã tồn tại"); });
         }
 
-        // Validate stock levels
-        if (request.getCurrentStock() != null && request.getCurrentStock() < 0) {
-            throw new MyCustomException("Tồn kho hiện tại không được âm");
-        }
-
-        if (request.getMinimumStockLevel() != null && request.getMinimumStockLevel() < 0) {
+        // Numeric validations (không đụng currentStock vì là derived)
+        if (request.getMinimumStockLevel() != null
+                && request.getMinimumStockLevel().compareTo(BigDecimal.ZERO) < 0) {
             throw new MyCustomException("Mức tồn kho tối thiểu không được âm");
         }
-
-        // Validate price
-        if (request.getFixedPrice() != null && request.getFixedPrice() < 0) {
+        if (request.getFixedPrice() != null && request.getFixedPrice().compareTo(BigDecimal.ZERO) < 0) {
             throw new MyCustomException("Giá cố định không được âm");
         }
-
-        // Validate percentage values
-        if (request.getPurityPercentage() != null && (request.getPurityPercentage() < 0 || request.getPurityPercentage() > 100)) {
-            throw new MyCustomException("Độ tinh khiết phải từ 0 đến 100%");
+        if (request.getPurityPercentage() != null) {
+            if (request.getPurityPercentage().compareTo(BigDecimal.ZERO) < 0
+                    || request.getPurityPercentage().compareTo(BigDecimal.valueOf(100)) > 0) {
+                throw new MyCustomException("Độ tinh khiết phải từ 0 đến 100%");
+            }
         }
-
-        if (request.getMoistureContent() != null && (request.getMoistureContent() < 0 || request.getMoistureContent() > 100)) {
-            throw new MyCustomException("Độ ẩm phải từ 0 đến 100%");
+        if (request.getMoistureContent() != null) {
+            if (request.getMoistureContent().compareTo(BigDecimal.ZERO) < 0
+                    || request.getMoistureContent().compareTo(BigDecimal.valueOf(100)) > 0) {
+                throw new MyCustomException("Độ ẩm phải từ 0 đến 100%");
+            }
         }
 
         try {
+            // Giữ lại tồn hiện tại trước khi map (tránh mapper overwrite)
+            BigDecimal keepCurrentStock = existingMaterial.getCurrentStock();
+
             materialMapper.updateMaterialFromRequest(request, existingMaterial);
             if (supplier != null) {
                 existingMaterial.setSupplier(supplier);
             }
 
-            return materialMapper.toMaterialDto(materialRepository.saveAndFlush(existingMaterial));
+            // Không cho mapper ghi đè currentStock
+            existingMaterial.setCurrentStock(keepCurrentStock);
+
+            Material saved = materialRepository.saveAndFlush(existingMaterial);
+
+            // Đồng bộ lại tồn kho từ lô (phòng trường hợp thay đổi ảnh hưởng đến cách hiển thị/đơn vị)
+            syncMaterialStock(saved.getId());
+
+            return materialMapper.toMaterialDto(saved);
         } catch (Exception e) {
             throw new MyCustomException("Có lỗi xảy ra trong quá trình cập nhật vật liệu");
         }
@@ -207,14 +192,9 @@ public class MaterialServiceImpl implements MaterialService {
     @Override
     @Auditable(action = AuditAction.DELETE, entityName = "Material", description = "Xóa vật liệu")
     public void deleteMaterial(Long id) {
-        Optional<Material> materialOptional = materialRepository.findById(id);
-        if (materialOptional.isEmpty()) {
-            throw new DataExistException("Vật liệu không tồn tại");
-        }
+        Material material = materialRepository.findById(id)
+                .orElseThrow(() -> new DataExistException("Vật liệu không tồn tại"));
 
-        Material material = materialOptional.get();
-
-        // Check if material has batches
         if (material.getBatches() != null && !material.getBatches().isEmpty()) {
             throw new MyCustomException("Không thể xóa vật liệu đang có lô hàng");
         }
@@ -231,53 +211,36 @@ public class MaterialServiceImpl implements MaterialService {
     public List<MaterialDto> deleteAllIdMaterials(List<Long> ids) {
         List<MaterialDto> materialDtos = new ArrayList<>();
         for (Long id : ids) {
-            Optional<Material> optionalMaterial = materialRepository.findById(id);
-            if (optionalMaterial.isPresent()) {
-                Material material = optionalMaterial.get();
+            Material material = materialRepository.findById(id)
+                    .orElseThrow(() -> new MyCustomException("Có lỗi xảy ra trong quá trình xóa danh sách vật liệu!"));
 
-                // Check if material has batches
-                if (material.getBatches() != null && !material.getBatches().isEmpty()) {
-                    throw new MyCustomException("Không thể xóa vật liệu đang có lô hàng: " + material.getMaterialName());
-                }
-
-                materialDtos.add(materialMapper.toMaterialDto(material));
-                materialRepository.delete(material);
-            } else {
-                throw new MyCustomException("Có lỗi xảy ra trong quá trình xóa danh sách vật liệu!");
+            if (material.getBatches() != null && !material.getBatches().isEmpty()) {
+                throw new MyCustomException("Không thể xóa vật liệu đang có lô hàng: " + material.getMaterialName());
             }
+
+            materialDtos.add(materialMapper.toMaterialDto(material));
+            materialRepository.delete(material);
         }
         return materialDtos;
     }
 
+    /**
+     * Đồng bộ tồn kho tổng của Material từ các lô (MaterialBatch).
+     * NOTE: giữ chữ ký cũ để không phá FE, nhưng bỏ ý nghĩa "set tay".
+     */
     @Override
     @Transactional
-    public void updateCurrentStock(Long materialId, Double newStock) {
-        Optional<Material> materialOptional = materialRepository.findById(materialId);
-        if (materialOptional.isEmpty()) {
-            throw new DataExistException("Vật liệu không tồn tại");
-        }
-
-        if (newStock < 0) {
-            throw new MyCustomException("Tồn kho hiện tại không được âm");
-        }
-
-        Material material = materialOptional.get();
-        material.setCurrentStock(newStock);
-
-        materialRepository.saveAndFlush(material);
+    public void updateCurrentStock(Long materialId, Double ignoredNewStock) {
+        syncMaterialStock(materialId);
     }
 
     @Override
     @Transactional
     public void toggleActiveStatus(Long materialId) {
-        Optional<Material> materialOptional = materialRepository.findById(materialId);
-        if (materialOptional.isEmpty()) {
-            throw new DataExistException("Vật liệu không tồn tại");
-        }
+        Material material = materialRepository.findById(materialId)
+                .orElseThrow(() -> new DataExistException("Vật liệu không tồn tại"));
 
-        Material material = materialOptional.get();
         material.setIsActive(!material.getIsActive());
-
         materialRepository.saveAndFlush(material);
     }
 
@@ -309,14 +272,11 @@ public class MaterialServiceImpl implements MaterialService {
     @Transactional
     public void syncMaterialStock(Long materialId) {
         BigDecimal totalQuantity = materialBatchRepository.getTotalQuantityByMaterial(materialId);
-        Double newStock = totalQuantity != null ? totalQuantity.doubleValue() : 0.0;
+        BigDecimal newStock = (totalQuantity != null ? totalQuantity : BigDecimal.ZERO);
 
-        Optional<Material> materialOptional = materialRepository.findById(materialId);
-        if (materialOptional.isPresent()) {
-            Material material = materialOptional.get();
-            material.setCurrentStock(newStock);
-            materialRepository.saveAndFlush(material);
-        }
+        materialRepository.findById(materialId).ifPresent(m -> {
+            m.setCurrentStock(newStock);
+            materialRepository.saveAndFlush(m);
+        });
     }
-
 }

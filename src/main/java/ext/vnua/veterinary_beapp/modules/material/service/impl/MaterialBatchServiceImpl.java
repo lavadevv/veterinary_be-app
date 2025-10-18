@@ -21,6 +21,7 @@ import ext.vnua.veterinary_beapp.modules.material.repository.MaterialRepository;
 import ext.vnua.veterinary_beapp.modules.material.repository.custom.CustomMaterialBatchQuery;
 import ext.vnua.veterinary_beapp.modules.material.service.MaterialBatchService;
 import ext.vnua.veterinary_beapp.modules.material.service.MaterialService;
+import ext.vnua.veterinary_beapp.modules.material.events.StockSyncPublisher;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -43,6 +44,7 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
     private final LocationRepository locationRepository;
     private final MaterialService materialService;
     private final MaterialBatchMapper materialBatchMapper;
+    private final StockSyncPublisher stockSyncPublisher;
 
     @Override
     public Page<MaterialBatch> getAllMaterialBatch(CustomMaterialBatchQuery.MaterialBatchFilterParam param,
@@ -112,7 +114,7 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
                     .orElseThrow(() -> new DataExistException("Vị trí không tồn tại"));
 
             // Check if location is available
-            if (!location.getIsAvailable()) {
+            if (Boolean.FALSE.equals(location.getIsAvailable())) {
                 throw new MyCustomException("Vị trí không khả dụng");
             }
         }
@@ -180,7 +182,8 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
                 updateLocationCapacity(location.getId(), savedBatch.getCurrentQuantity().doubleValue());
             }
 
-            materialService.syncMaterialStock(material.getId());
+            // Publish sync stock AFTER_COMMIT
+            stockSyncPublisher.publishForMaterial(material.getId());
 
             return materialBatchMapper.toMaterialBatchDto(savedBatch);
         } catch (Exception e) {
@@ -211,7 +214,7 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
             location = locationRepository.findById(request.getLocationId())
                     .orElseThrow(() -> new DataExistException("Vị trí không tồn tại"));
 
-            if (!location.getIsAvailable()) {
+            if (Boolean.FALSE.equals(location.getIsAvailable())) {
                 throw new MyCustomException("Vị trí không khả dụng");
             }
         }
@@ -288,7 +291,8 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
                 }
             }
 
-            materialService.syncMaterialStock(material.getId());
+            // Publish sync stock AFTER_COMMIT
+            stockSyncPublisher.publishForMaterial(material.getId());
 
             return materialBatchMapper.toMaterialBatchDto(savedBatch);
         } catch (Exception e) {
@@ -320,7 +324,8 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
 
             materialBatchRepository.deleteById(id);
 
-            materialService.syncMaterialStock(materialBatch.getMaterial().getId());
+            // Publish sync stock AFTER_COMMIT
+            stockSyncPublisher.publishForMaterial(materialBatch.getMaterial().getId());
         } catch (Exception e) {
             throw new MyCustomException("Có lỗi xảy ra trong quá trình xóa lô vật liệu");
         }
@@ -349,6 +354,9 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
                 }
 
                 materialBatchRepository.delete(materialBatch);
+
+                // Publish sync stock for each material AFTER_COMMIT
+                stockSyncPublisher.publishForMaterial(materialBatch.getMaterial().getId());
             } else {
                 throw new MyCustomException("Có lỗi xảy ra trong quá trình xóa danh sách lô vật liệu!");
             }
@@ -385,7 +393,8 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
 
         materialBatchRepository.saveAndFlush(materialBatch);
 
-        materialService.syncMaterialStock(materialBatch.getMaterial().getId());
+        // Publish sync stock AFTER_COMMIT
+        stockSyncPublisher.publishForMaterial(materialBatch.getMaterial().getId());
     }
 
     @Override
@@ -442,7 +451,7 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
             newLocation = locationRepository.findById(newLocationId)
                     .orElseThrow(() -> new DataExistException("Vị trí mới không tồn tại"));
 
-            if (!newLocation.getIsAvailable()) {
+            if (Boolean.FALSE.equals(newLocation.getIsAvailable())) {
                 throw new MyCustomException("Vị trí mới không khả dụng");
             }
         }
@@ -505,16 +514,17 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
                 .collect(java.util.stream.Collectors.toList());
     }
 
-    // Helper method to update location capacity
+    // Helper method to update location capacity (null-safe)
     private void updateLocationCapacity(Long locationId, Double capacityChange) {
-        if (locationId == null || capacityChange == 0) {
+        if (locationId == null || capacityChange == null || capacityChange.doubleValue() == 0d) {
             return;
         }
 
         Optional<Location> locationOptional = locationRepository.findById(locationId);
         if (locationOptional.isPresent()) {
             Location location = locationOptional.get();
-            Double newCapacity = location.getCurrentCapacity() + capacityChange;
+            Double cur = location.getCurrentCapacity() == null ? 0d : location.getCurrentCapacity();
+            Double newCapacity = cur + capacityChange;
 
             if (newCapacity < 0) {
                 newCapacity = 0.0;
@@ -530,6 +540,7 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
             locationRepository.saveAndFlush(location);
         }
     }
+
     @Override
     @Transactional
     @Auditable(action = AuditAction.UPDATE, entityName = "MaterialBatch", description = "Chuyển lô vật liệu")
@@ -542,7 +553,7 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
             newLocation = locationRepository.findById(request.getNewLocationId())
                     .orElseThrow(() -> new DataExistException("Vị trí đích không tồn tại"));
 
-            if (!newLocation.getIsAvailable()) {
+            if (Boolean.FALSE.equals(newLocation.getIsAvailable())) {
                 throw new MyCustomException("Vị trí đích không khả dụng");
             }
         }
@@ -615,7 +626,8 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
 
         materialBatchRepository.saveAndFlush(batch);
 
-        materialService.syncMaterialStock(batch.getMaterial().getId());
+        // Publish sync stock AFTER_COMMIT
+        stockSyncPublisher.publishForMaterial(batch.getMaterial().getId());
     }
 
     @Override
@@ -667,7 +679,6 @@ public class MaterialBatchServiceImpl implements MaterialBatchService {
 
     @Override
     public List<MaterialBatchDto> getBatchesByDateRange(LocalDate startDate, LocalDate endDate) {
-        // This would need a custom query in repository
         CustomMaterialBatchQuery.MaterialBatchFilterParam param =
                 new CustomMaterialBatchQuery.MaterialBatchFilterParam();
         param.setReceivedFromDate(startDate);

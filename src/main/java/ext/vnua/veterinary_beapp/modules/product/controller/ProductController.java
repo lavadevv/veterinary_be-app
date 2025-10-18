@@ -8,7 +8,7 @@ import ext.vnua.veterinary_beapp.modules.product.dto.request.product.GetProductR
 import ext.vnua.veterinary_beapp.modules.product.dto.request.product.UpdateProductRequest;
 import ext.vnua.veterinary_beapp.modules.product.mapper.ProductMapper;
 import ext.vnua.veterinary_beapp.modules.product.model.Product;
-import ext.vnua.veterinary_beapp.modules.product.servies.ProductService;
+import ext.vnua.veterinary_beapp.modules.product.services.ProductService;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import jakarta.validation.Valid;

@@ -33,10 +33,10 @@ public class ProductFormula extends AuditableEntity {
     private Product product;
 
     @Column(name = "version", nullable = false)
-    private String version; // v1.0, v1.1, v2.0...
+    private String version;
 
-    @Column(name = "batch_size", nullable = false, precision = 10, scale = 3)
-    private BigDecimal batchSize; // Kích thước lô sản xuất chuẩn
+    @Column(name = "batch_size", precision = 10, scale = 3)
+    private BigDecimal batchSize;
 
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
@@ -49,11 +49,20 @@ public class ProductFormula extends AuditableEntity {
     private User approvedBy;
 
     @Column(name = "sop_file_path")
-    private String sopFilePath; // Link đến file SOP hoặc TCCS
+    private String sopFilePath;
 
-    // Relationships
-//    @OneToMany(mappedBy = "formula", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-//    private List<ProductFormulaItem> formulaItems = new ArrayList<>();
+    /* ===== NEW: flags & basis ===== */
+    @Column(name = "is_liquid_formula", nullable = false)
+    private Boolean isLiquidFormula = Boolean.FALSE;   // default false
+
+    @Column(name = "basis_value", precision = 12, scale = 3)
+    private BigDecimal basisValue;                     // default 1000
+
+    @Column(name = "basis_unit", length = 10)
+    private String basisUnit;                          // default "g"  | "kg" | "l"
+
+    @Column(name = "density", precision = 12, scale = 6)
+    private BigDecimal density;                        // g/mL, optional nếu basisUnit="l"
 
     @OneToMany(
             mappedBy = "formula",
@@ -62,5 +71,4 @@ public class ProductFormula extends AuditableEntity {
             orphanRemoval = true
     )
     private List<ProductFormulaItem> formulaItems = new ArrayList<>();
-
 }

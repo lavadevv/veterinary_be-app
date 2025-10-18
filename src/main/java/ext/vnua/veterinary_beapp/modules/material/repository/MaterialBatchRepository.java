@@ -99,4 +99,37 @@ public interface MaterialBatchRepository extends JpaRepository<MaterialBatch, Lo
 
     List<MaterialBatch> findByMaterialIdAndTestStatusAndUsageStatusAndExpiryDateGreaterThanEqualOrderByExpiryDateAscManufacturingDateAscIdAsc(
             Long materialId, TestStatus testStatus, UsageStatus usageStatus, LocalDate today);
+
+    @Query("""
+        SELECT mb FROM MaterialBatch mb
+        WHERE mb.material.id = :materialId
+          AND mb.availableQuantity > 0
+          AND mb.testStatus = :approvedStatus
+          AND mb.usageStatus = :availableStatus
+          AND (mb.expiryDate IS NULL OR mb.expiryDate >= :today)
+        ORDER BY
+          CASE WHEN mb.expiryDate IS NULL THEN 1 ELSE 0 END ASC,
+          mb.expiryDate ASC,
+          mb.receivedDate ASC,
+          mb.id ASC
+    """)
+    List<MaterialBatch> findAvailableByMaterialFifoUsable(
+            @Param("materialId") Long materialId,
+            @Param("approvedStatus") ext.vnua.veterinary_beapp.modules.material.enums.TestStatus approvedStatus,
+            @Param("availableStatus") ext.vnua.veterinary_beapp.modules.material.enums.UsageStatus availableStatus,
+            @Param("today") java.time.LocalDate today
+    );
+
+
+
+
+    // thêm vào MaterialBatchRepository
+    @Query("""
+       select mb from MaterialBatch mb
+       join fetch mb.material m
+       where mb.receivedDate between :start and :end
+    """)
+    List<MaterialBatch> findByReceivedDateBetween(java.time.LocalDate start, java.time.LocalDate end);
+
+
 }

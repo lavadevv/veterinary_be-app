@@ -15,6 +15,7 @@ public interface ProductFormulaMapper {
     @Mapping(source = "product.productName", target = "productName")
     @Mapping(source = "createdBy", target = "createdBy")
     @Mapping(source = "approvedBy.id", target = "approvedById")
+    @Mapping(source = "isLiquidFormula", target = "isLiquidFormula")
     ProductFormulaDto toDto(ProductFormula entity);
 
     @Mapping(source = "material.id", target = "materialId")
@@ -22,7 +23,6 @@ public interface ProductFormulaMapper {
     @Mapping(source = "material.materialName", target = "materialName")
     ProductFormulaItemDto toItemDto(ProductFormulaItem item);
 
-    // Upsert: map từ request sang entity (bỏ map product/createdBy/approvedBy để set trong service)
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "product", ignore = true)
     @Mapping(target = "createdBy", ignore = true)

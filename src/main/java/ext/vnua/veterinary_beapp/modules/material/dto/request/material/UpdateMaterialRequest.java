@@ -5,9 +5,12 @@ import ext.vnua.veterinary_beapp.modules.material.enums.MaterialType;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 
+import java.math.BigDecimal;
+
 @Data
 public class UpdateMaterialRequest {
 
+    // Giữ id để tương thích với service.updateMaterial(request)
     @NotNull(message = "ID không được để trống")
     private Long id;
 
@@ -32,10 +35,10 @@ public class UpdateMaterialRequest {
 
     @DecimalMin(value = "0.0", message = "Độ tinh khiết không được âm")
     @DecimalMax(value = "100.0", message = "Độ tinh khiết không được vượt quá 100%")
-    private Double purityPercentage;
+    private BigDecimal purityPercentage;
 
     @DecimalMin(value = "0.0", message = "IU/gram không được âm")
-    private Double iuPerGram;
+    private BigDecimal iuPerGram;
 
     @Size(max = 50, message = "Màu sắc không được vượt quá 50 ký tự")
     private String color;
@@ -45,10 +48,10 @@ public class UpdateMaterialRequest {
 
     @DecimalMin(value = "0.0", message = "Độ ẩm không được âm")
     @DecimalMax(value = "100.0", message = "Độ ẩm không được vượt quá 100%")
-    private Double moistureContent;
+    private BigDecimal moistureContent;
 
     @DecimalMin(value = "0.0", message = "Độ nhớt không được âm")
-    private Double viscosity;
+    private BigDecimal viscosity;
 
     @NotBlank(message = "Đơn vị đo không được để trống")
     @Size(max = 20, message = "Đơn vị đo không được vượt quá 20 ký tự")
@@ -61,18 +64,15 @@ public class UpdateMaterialRequest {
     private Long supplierId;
 
     @DecimalMin(value = "0.0", message = "Mức tồn kho tối thiểu không được âm")
-    private Double minimumStockLevel;
+    private BigDecimal minimumStockLevel;
 
-    @DecimalMin(value = "0.0", message = "Tồn kho hiện tại không được âm")
-    private Double currentStock;
+    // currentStock là số dẫn xuất từ MaterialBatch → KHÔNG cho sửa qua DTO
 
     @DecimalMin(value = "0.0", message = "Giá cố định không được âm")
-    private Double fixedPrice;
+    private BigDecimal fixedPrice;
 
+    // Cho phép null; service/mapper sẽ giữ nguyên nếu không gửi
     private Boolean requiresColdStorage;
-
-    @Size(max = 1000, message = "Hướng dẫn xử lý đặc biệt không được vượt quá 1000 ký tự")
-    private String specialHandling;
 
     @NotNull(message = "Trạng thái hoạt động không được để trống")
     private Boolean isActive;

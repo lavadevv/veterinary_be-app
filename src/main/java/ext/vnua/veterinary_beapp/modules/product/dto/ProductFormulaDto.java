@@ -1,11 +1,13 @@
 package ext.vnua.veterinary_beapp.modules.product.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Data;
 
 import java.math.BigDecimal;
 import java.util.List;
 
 @Data
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ProductFormulaDto {
     private Long id;
     private Long productId;
@@ -18,6 +20,10 @@ public class ProductFormulaDto {
     private String createdBy;
     private Long approvedById;
     private String sopFilePath;
+
+    /** NEW: cờ công thức dung dịch (cho phép tổng % > 100) */
+    private Boolean isLiquidFormula;
+
     private List<ProductFormulaItemDto> formulaItems;
 
     @Override
@@ -41,8 +47,8 @@ public class ProductFormulaDto {
                 ", createdById=" + createdBy +
                 ", approvedById=" + approvedById +
                 ", sopFilePath='" + sop + '\'' +
+                ", isLiquidFormula=" + isLiquidFormula +
                 ", items=" + itemCount +
                 '}';
     }
-
 }

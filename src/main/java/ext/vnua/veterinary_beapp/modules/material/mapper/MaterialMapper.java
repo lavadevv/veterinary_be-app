@@ -8,11 +8,18 @@ import org.mapstruct.AfterMapping;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
-import org.mapstruct.factory.Mappers;
+import org.mapstruct.NullValuePropertyMappingStrategy;
+import org.mapstruct.ReportingPolicy;
 
-@Mapper(componentModel = "spring", uses = {SupplierMapper.class})
+import java.math.BigDecimal;
+
+@Mapper(
+        componentModel = "spring",
+        uses = {SupplierMapper.class},
+        unmappedTargetPolicy = ReportingPolicy.IGNORE,
+        nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE
+)
 public interface MaterialMapper {
-    MaterialMapper INSTANCE = Mappers.getMapper(MaterialMapper.class);
 
     @Mapping(source = "supplier", target = "supplierDto")
     MaterialDto toMaterialDto(Material material);
@@ -20,16 +27,19 @@ public interface MaterialMapper {
     @Mapping(source = "supplierDto", target = "supplier")
     Material toMaterial(MaterialDto materialDto);
 
+    // Create: bỏ id/supplier/batches, isActive sẽ set mặc định ở service
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "supplier", ignore = true)
     @Mapping(target = "batches", ignore = true)
-    @Mapping(target = "isActive", ignore = true) // Will be set to true by default in service
+    @Mapping(target = "isActive", ignore = true)
     Material toCreateMaterial(CreateMaterialRequest request);
 
+    // Map từ Update DTO sang entity MỚI (ít dùng); giữ lại để tương thích, nhưng khuyến nghị dùng updateMaterialFromRequest
     @Mapping(target = "supplier", ignore = true)
     @Mapping(target = "batches", ignore = true)
     Material toUpdateMaterial(UpdateMaterialRequest request);
 
+    // Update in-place (PATCH/PUT): bỏ id/supplier/batches, IGNORE null để không overwrite
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "supplier", ignore = true)
     @Mapping(target = "batches", ignore = true)
@@ -37,9 +47,8 @@ public interface MaterialMapper {
 
     @AfterMapping
     default void afterMappingCreate(@MappingTarget Material material, CreateMaterialRequest request) {
-        // Set default values if not provided
         if (material.getCurrentStock() == null) {
-            material.setCurrentStock(0.0);
+            material.setCurrentStock(BigDecimal.ZERO);
         }
         if (material.getIsActive() == null) {
             material.setIsActive(true);
@@ -51,9 +60,9 @@ public interface MaterialMapper {
 
     @AfterMapping
     default void afterMappingUpdate(@MappingTarget Material material, UpdateMaterialRequest request) {
-        // Ensure currentStock is not null
+        // Chỉ đảm bảo không null; không ép isActive nếu DTO không gửi (đã IGNORE null ở trên)
         if (material.getCurrentStock() == null) {
-            material.setCurrentStock(0.0);
+            material.setCurrentStock(BigDecimal.ZERO);
         }
         if (material.getRequiresColdStorage() == null) {
             material.setRequiresColdStorage(false);

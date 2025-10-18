@@ -8,7 +8,7 @@ import ext.vnua.veterinary_beapp.modules.product.dto.request.productRegistration
 import ext.vnua.veterinary_beapp.modules.product.dto.request.productRegistration.UpdateProductRegistrationRequest;
 import ext.vnua.veterinary_beapp.modules.product.mapper.ProductRegistrationMapper;
 import ext.vnua.veterinary_beapp.modules.product.model.ProductRegistration;
-import ext.vnua.veterinary_beapp.modules.product.servies.ProductRegistrationService;
+import ext.vnua.veterinary_beapp.modules.product.services.ProductRegistrationService;
 import io.swagger.annotations.ApiOperation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

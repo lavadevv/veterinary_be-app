@@ -2,12 +2,16 @@ package ext.vnua.veterinary_beapp.modules.product.controller;
 
 import ext.vnua.veterinary_beapp.dto.response.BaseResponse;
 import ext.vnua.veterinary_beapp.modules.product.dto.ProductFormulaDto;
+import ext.vnua.veterinary_beapp.modules.product.dto.request.formula.GetProductFormulaRequest;
+import ext.vnua.veterinary_beapp.modules.product.dto.request.formula.ProductFormulaListRow;
 import ext.vnua.veterinary_beapp.modules.product.dto.request.productBatch.UpsertFormulaRequest;
-import ext.vnua.veterinary_beapp.modules.product.servies.ProductFormulaService;
+import ext.vnua.veterinary_beapp.modules.product.services.ProductFormulaService;
 import io.swagger.annotations.ApiOperation;
 import io.swagger.annotations.ApiParam;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -57,5 +61,24 @@ public class ProductFormulaController {
     public ResponseEntity<?> delete(@PathVariable Long id) {
         formulaService.deleteFormula(id);
         return ResponseEntity.ok("Đã xóa công thức");
+    }
+
+    // ======= NEW: danh sách toàn cục với filter + paging =======
+    @ApiOperation(value = "Lấy danh sách công thức (toàn cục) – filter + paging")
+    @GetMapping("")
+    @PreAuthorize("hasAnyAuthority('ADMIN','PRODUCTION_MANAGER','QC_STAFF','VIEWER')")
+    public ResponseEntity<?> listAll(@Valid @ModelAttribute GetProductFormulaRequest req) {
+        Page<ProductFormulaListRow> page =
+                formulaService.getAllFormulaRows(req, PageRequest.of(req.getStart(), req.getLimit()));
+
+        return BaseResponse.successListData(page.getContent(), (int) page.getTotalElements());
+    }
+
+    // ======= NEW: xem chi tiết 1 công thức theo ID (phục vụ click từ list toàn cục) =======
+    @ApiOperation(value = "Xem chi tiết công thức theo ID (cho màn danh sách toàn cục)")
+    @GetMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('ADMIN','PRODUCTION_MANAGER','QC_STAFF','VIEWER')")
+    public ResponseEntity<?> getById(@PathVariable Long id) {
+        return ResponseEntity.ok(formulaService.getById(id));
     }
 }
