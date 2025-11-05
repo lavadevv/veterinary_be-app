@@ -1,13 +1,13 @@
 package ext.vnua.veterinary_beapp.modules.material.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import ext.vnua.veterinary_beapp.modules.audits.entity.AuditableEntity;
-import ext.vnua.veterinary_beapp.modules.material.enums.MaterialForm;
-import ext.vnua.veterinary_beapp.modules.material.enums.MaterialType;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import org.hibernate.Hibernate;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
@@ -31,19 +31,22 @@ public class Material extends AuditableEntity {
     @Column(name = "material_name", nullable = false, length = 255)
     private String materialName;
 
-    @Column(name = "short_name", length = 100)
-    private String shortName;
+    @Column(name = "international_name", length = 150) // tăng length nếu cần
+    private String internationalName;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "material_type", nullable = false, length = 50)
-    private MaterialType materialType;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "material_category_id",
+            foreignKey = @ForeignKey(name = "fk_materials_category"))
+    private MaterialCategory materialCategory;
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "material_form", length = 50)
-    private MaterialForm materialForm;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "material_form_type_id",
+            foreignKey = @ForeignKey(name = "fk_materials_form_type"))
+    private MaterialFormType materialFormType;
 
-    @Column(name = "active_ingredient", columnDefinition = "TEXT")
-    private String activeIngredient;
+    @OneToMany(mappedBy = "material", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
+    private List<MaterialActiveIngredient> activeIngredients = new ArrayList<>();
 
     @Column(name = "purity_percentage", precision = 10, scale = 4)
     private BigDecimal purityPercentage;
@@ -63,14 +66,17 @@ public class Material extends AuditableEntity {
     @Column(name = "viscosity", precision = 18, scale = 6)
     private BigDecimal viscosity;
 
-    @Column(name = "unit_of_measure", nullable = false, length = 20)
-    private String unitOfMeasure; // kg, g, ml, L, cái, cuộn, lọ, m2...
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "unit_of_measure_id",
+            foreignKey = @ForeignKey(name = "fk_materials_uom"))
+    private UnitOfMeasure unitOfMeasure;
 
     @Column(name = "standard_applied", columnDefinition = "TEXT")
     private String standardApplied; // USP, BP, EP, tiêu chuẩn nhà sản xuất...
 
-    @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "supplier_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "supplier_id",
+            foreignKey = @ForeignKey(name = "fk_materials_supplier"))
     private Supplier supplier;
 
     @Column(name = "minimum_stock_level", precision = 18, scale = 6)
@@ -95,8 +101,10 @@ public class Material extends AuditableEntity {
     private String notes;
 
     // Relationships
+    // Material không trực tiếp liên kết với MaterialBatch nữa
+    // Thay vào đó, Material liên kết với MaterialBatchItem
     @OneToMany(mappedBy = "material", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<MaterialBatch> batches;
+    private List<MaterialBatchItem> batchItems;
 
     @OneToMany(mappedBy = "material", cascade = CascadeType.ALL, orphanRemoval = false)
     private List<MaterialPriceHistory> priceHistories = new ArrayList<>();
@@ -108,16 +116,30 @@ public class Material extends AuditableEntity {
         sb.append("Mã nguyên liệu: ").append(materialCode).append("\n");
         sb.append("Tên nguyên liệu: ").append(materialName).append("\n");
 
-        if (shortName != null) {
-            sb.append("Tên viết tắt: ").append(shortName).append("\n");
+        if (internationalName != null) {
+            sb.append("Tên quốc tế: ").append(internationalName).append("\n");
         }
 
-        sb.append("Loại: ").append(materialType != null ? materialType.getDisplayName() : "Chưa xác định").append("\n");
-        sb.append("Dạng: ").append(materialForm != null ? materialForm.getDisplayName() : "Chưa xác định").append("\n");
-
-        if (activeIngredient != null) {
-            sb.append("Hoạt chất chính: ").append(activeIngredient).append("\n");
+        if (materialCategory != null) {
+             sb.append("Loại: ").append(materialCategory.getCategoryName()).append("\n");
         }
+
+        if (activeIngredients != null && !activeIngredients.isEmpty()) {
+            sb.append("Hoạt chất:\n");
+            for (MaterialActiveIngredient mai : activeIngredients) {
+                if (mai.getActiveIngredient() != null) {
+                    sb.append("- ")
+                            .append(mai.getActiveIngredient().getIngredientName());
+                    if (mai.getContentValue() != null) {
+                        sb.append(" (")
+                                .append(mai.getContentValue().stripTrailingZeros().toPlainString());
+                        if (mai.getContentUnit() != null) sb.append(" ").append(mai.getContentUnit());
+                         sb.append(")");
+                        }
+                    sb.append("\n");
+                                    }
+                }
+            }
 
         if (purityPercentage != null) {
             sb.append("Độ tinh khiết: ").append(purityPercentage.stripTrailingZeros().toPlainString()).append("%\n");
@@ -147,7 +169,7 @@ public class Material extends AuditableEntity {
         }
 
         if (supplier != null) {
-            sb.append("Nhà cung cấp: ").append(supplier.getSupplierName()).append("\n");
+            sb.append("NCC mặc định: ").append(supplier.getSupplierName()).append("\n");
         }
 
         if (minimumStockLevel != null) {

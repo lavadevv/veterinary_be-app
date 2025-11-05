@@ -13,6 +13,7 @@ import ext.vnua.veterinary_beapp.modules.material.model.Warehouse;
 import ext.vnua.veterinary_beapp.modules.material.repository.LocationRepository;
 import ext.vnua.veterinary_beapp.modules.material.repository.WarehouseRepository;
 import ext.vnua.veterinary_beapp.modules.material.repository.custom.CustomLocationQuery;
+import ext.vnua.veterinary_beapp.modules.material.service.LocationCapacityService;
 import ext.vnua.veterinary_beapp.modules.material.service.LocationService;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
@@ -31,6 +32,7 @@ public class LocationServiceImpl implements LocationService {
     private final LocationRepository locationRepository;
     private final WarehouseRepository warehouseRepository;
     private final LocationMapper locationMapper;
+    private final LocationCapacityService locationCapacityService;
 
     @Override
     public Page<Location> getAllLocation(CustomLocationQuery.LocationFilterParam param, PageRequest pageRequest) {
@@ -111,49 +113,39 @@ public class LocationServiceImpl implements LocationService {
     @Transactional
     @Auditable(action = AuditAction.UPDATE, entityName = "Location", description = "Cập nhật vị trí")
     public LocationDto updateLocation(UpdateLocationRequest request) {
-        Optional<Location> locationOptional = locationRepository.findById(request.getId());
-        if (locationOptional.isEmpty()) {
-            throw new DataExistException("Vị trí không tồn tại");
-        }
+        Location existing = locationRepository.findById(request.getId())
+                .orElseThrow(() -> new DataExistException("Vị trí không tồn tại"));
 
-        Location existingLocation = locationOptional.get();
-
-        // Validate warehouse exists if changed
+        // warehouse bắt buộc tồn tại
         Warehouse warehouse = warehouseRepository.findById(request.getWarehouseId())
                 .orElseThrow(() -> new DataExistException("Kho không tồn tại"));
 
-        // Validate location code is unique within warehouse (excluding current location)
-        if (!existingLocation.getLocationCode().equals(request.getLocationCode()) ||
-                !existingLocation.getWarehouse().getId().equals(request.getWarehouseId())) {
-            Optional<Location> duplicateLocation = locationRepository
-                    .findByLocationCodeAndWarehouseIdAndIdNot(
-                            request.getLocationCode(),
-                            request.getWarehouseId(),
-                            request.getId());
-            if (duplicateLocation.isPresent()) {
-                throw new DataExistException("Mã vị trí đã tồn tại trong kho này");
-            }
+        // nếu đổi mã hoặc đổi kho -> check unique
+        String newCode = request.getLocationCode() != null ? request.getLocationCode() : existing.getLocationCode();
+        Long newWarehouseId = request.getWarehouseId();
+        if (!existing.getLocationCode().equals(newCode) || !existing.getWarehouse().getId().equals(newWarehouseId)) {
+            locationRepository.findByLocationCodeAndWarehouseIdAndIdNot(newCode, newWarehouseId, existing.getId())
+                    .ifPresent(x -> { throw new DataExistException("Mã vị trí đã tồn tại trong kho này"); });
         }
 
-        // Validate capacity
-        if (request.getMaxCapacity() != null && request.getMaxCapacity() <= 0) {
-            throw new MyCustomException("Sức chứa tối đa phải lớn hơn 0");
-        }
+        // validate capacity
+        Double newMax = request.getMaxCapacity() != null ? request.getMaxCapacity() : existing.getMaxCapacity();
+        if (newMax == null || newMax <= 0) throw new MyCustomException("Sức chứa tối đa phải lớn hơn 0");
 
-        if (request.getCurrentCapacity() != null && request.getMaxCapacity() != null
-                && request.getCurrentCapacity() > request.getMaxCapacity()) {
-            throw new MyCustomException("Sức chứa hiện tại không được vượt quá sức chứa tối đa");
-        }
+        Double oldCurrent = existing.getCurrentCapacity() == null ? 0.0 : existing.getCurrentCapacity();
+        Double newCurrent = request.getCurrentCapacity() != null ? request.getCurrentCapacity() : oldCurrent;
+        if (newCurrent < 0) throw new MyCustomException("Sức chứa hiện tại không được âm");
+        if (newCurrent > newMax) throw new MyCustomException("Sức chứa hiện tại không được vượt quá sức chứa tối đa");
 
-        try {
-            Location location = locationMapper.toUpdateLocation(request);
-            location.setWarehouse(warehouse);
+        // update in-place bằng mapper
+        locationMapper.updateLocation(request, existing);
+        // đảm bảo các trường phụ thuộc
+        existing.setWarehouse(warehouse);
+        existing.setCurrentCapacity(newCurrent);
 
-            return locationMapper.toLocationDto(locationRepository.saveAndFlush(location));
-        } catch (Exception e) {
-            throw new MyCustomException("Có lỗi xảy ra trong quá trình cập nhật vị trí");
-        }
+        return locationMapper.toLocationDto(locationRepository.saveAndFlush(existing));
     }
+
 
     @Override
     @Auditable(action = AuditAction.DELETE, entityName = "Location", description = "Xóa vị trí")
@@ -245,5 +237,21 @@ public class LocationServiceImpl implements LocationService {
         return locations.stream()
                 .map(locationMapper::toLocationDto)
                 .collect(java.util.stream.Collectors.toList());
+    }
+
+    @Override
+    @Transactional
+    public void recalculateLocationCapacity(Long locationId) {
+        locationCapacityService.recalculateLocationCapacity(locationId);
+    }
+
+    @Override
+    public Double getAvailableCapacity(Long locationId) {
+        return locationCapacityService.getAvailableCapacity(locationId);
+    }
+
+    @Override
+    public Double getOccupancyPercentage(Long locationId) {
+        return locationCapacityService.getOccupancyPercentage(locationId);
     }
 }

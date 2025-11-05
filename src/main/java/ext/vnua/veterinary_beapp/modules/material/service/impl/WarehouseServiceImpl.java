@@ -9,7 +9,9 @@ import ext.vnua.veterinary_beapp.modules.material.dto.request.warehouse.CreateWa
 import ext.vnua.veterinary_beapp.modules.material.dto.request.warehouse.UpdateWarehouseRequest;
 import ext.vnua.veterinary_beapp.modules.material.mapper.WarehouseMapper;
 import ext.vnua.veterinary_beapp.modules.material.model.Warehouse;
+import ext.vnua.veterinary_beapp.modules.material.model.WarehouseType;
 import ext.vnua.veterinary_beapp.modules.material.repository.WarehouseRepository;
+import ext.vnua.veterinary_beapp.modules.material.repository.WarehouseTypeRepository;
 import ext.vnua.veterinary_beapp.modules.material.repository.custom.CustomWarehouseQuery;
 import ext.vnua.veterinary_beapp.modules.material.service.WarehouseService;
 import jakarta.transaction.Transactional;
@@ -27,6 +29,7 @@ import java.util.Optional;
 @RequiredArgsConstructor
 public class WarehouseServiceImpl implements WarehouseService {
     private final WarehouseRepository warehouseRepository;
+    private final WarehouseTypeRepository warehouseTypeRepository;
     private final WarehouseMapper warehouseMapper;
 
     @Override
@@ -35,56 +38,42 @@ public class WarehouseServiceImpl implements WarehouseService {
         return warehouseRepository.findAll(specification, pageRequest);
     }
 
+    @Override
     public List<WarehouseDto> getAllWarehouses() {
-        List<Warehouse> warehouses = warehouseRepository.findAll();
-        return warehouses.stream()
-                .map(warehouseMapper::toWarehouseDto)
-                .collect(java.util.stream.Collectors.toList());
+        return warehouseRepository.findAll()
+                .stream().map(warehouseMapper::toWarehouseDto).toList();
     }
 
     @Override
     public WarehouseDto selectWarehouseById(Long id) {
-        Optional<Warehouse> warehouseOptional = warehouseRepository.findById(id);
-        if (warehouseOptional.isEmpty()) {
-            throw new DataExistException("Kho không tồn tại");
-        }
-        Warehouse warehouse = warehouseOptional.get();
+        Warehouse warehouse = warehouseRepository.findById(id)
+                .orElseThrow(() -> new DataExistException("Kho không tồn tại"));
         return warehouseMapper.toWarehouseDto(warehouse);
     }
 
     @Override
     public WarehouseDto selectWarehouseByCode(String warehouseCode) {
-        Optional<Warehouse> warehouseOptional = warehouseRepository.findByWarehouseCode(warehouseCode);
-        if (warehouseOptional.isEmpty()) {
-            throw new DataExistException("Mã kho không tồn tại");
-        }
-        Warehouse warehouse = warehouseOptional.get();
+        Warehouse warehouse = warehouseRepository.findByWarehouseCode(warehouseCode)
+                .orElseThrow(() -> new DataExistException("Mã kho không tồn tại"));
         return warehouseMapper.toWarehouseDto(warehouse);
     }
 
     @Override
     public List<WarehouseDto> selectAllActiveWarehouses() {
-        List<Warehouse> warehouses = warehouseRepository.findByIsActiveTrue();
-        return warehouses.stream()
-                .map(warehouseMapper::toWarehouseDto)
-                .collect(java.util.stream.Collectors.toList());
+        return warehouseRepository.findByIsActiveTrue()
+                .stream().map(warehouseMapper::toWarehouseDto).toList();
     }
 
     @Override
     @Transactional
     @Auditable(action = AuditAction.CREATE, entityName = "Warehouse", description = "Tạo mới kho")
     public WarehouseDto createWarehouse(CreateWarehouseRequest request) {
-        // Validate warehouse code is unique
-        Optional<Warehouse> existingWarehouse = warehouseRepository.findByWarehouseCode(request.getWarehouseCode());
-        if (existingWarehouse.isPresent()) {
-            throw new DataExistException("Mã kho đã tồn tại");
-        }
+        warehouseRepository.findByWarehouseCode(request.getWarehouseCode())
+                .ifPresent(w -> { throw new DataExistException("Mã kho đã tồn tại"); });
 
-        // Validate required fields
         if (request.getWarehouseName() == null || request.getWarehouseName().trim().isEmpty()) {
             throw new MyCustomException("Tên kho không được để trống");
         }
-
         if (request.getWarehouseCode() == null || request.getWarehouseCode().trim().isEmpty()) {
             throw new MyCustomException("Mã kho không được để trống");
         }
@@ -92,6 +81,10 @@ public class WarehouseServiceImpl implements WarehouseService {
         try {
             Warehouse warehouse = warehouseMapper.toCreateWarehouse(request);
             warehouse.setIsActive(true);
+
+            WarehouseType wt = warehouseTypeRepository.findById(request.getWarehouseTypeId())
+                    .orElseThrow(() -> new MyCustomException("WarehouseType không tồn tại"));
+            warehouse.setWarehouseType(wt);
 
             return warehouseMapper.toWarehouseDto(warehouseRepository.saveAndFlush(warehouse));
         } catch (Exception e) {
@@ -103,34 +96,28 @@ public class WarehouseServiceImpl implements WarehouseService {
     @Transactional
     @Auditable(action = AuditAction.UPDATE, entityName = "Warehouse", description = "Cập nhật kho")
     public WarehouseDto updateWarehouse(UpdateWarehouseRequest request) {
-        Optional<Warehouse> warehouseOptional = warehouseRepository.findById(request.getId());
-        if (warehouseOptional.isEmpty()) {
-            throw new DataExistException("Kho không tồn tại");
+        Warehouse existing = warehouseRepository.findById(request.getId())
+                .orElseThrow(() -> new DataExistException("Kho không tồn tại"));
+
+        if (!existing.getWarehouseCode().equals(request.getWarehouseCode())) {
+            warehouseRepository.findByWarehouseCodeAndIdNot(request.getWarehouseCode(), request.getId())
+                    .ifPresent(w -> { throw new DataExistException("Mã kho đã tồn tại"); });
         }
-
-        Warehouse existingWarehouse = warehouseOptional.get();
-
-        // Validate warehouse code is unique (excluding current warehouse)
-        if (!existingWarehouse.getWarehouseCode().equals(request.getWarehouseCode())) {
-            Optional<Warehouse> duplicateWarehouse = warehouseRepository.findByWarehouseCodeAndIdNot(
-                    request.getWarehouseCode(), request.getId());
-            if (duplicateWarehouse.isPresent()) {
-                throw new DataExistException("Mã kho đã tồn tại");
-            }
-        }
-
-        // Validate required fields
         if (request.getWarehouseName() == null || request.getWarehouseName().trim().isEmpty()) {
             throw new MyCustomException("Tên kho không được để trống");
         }
-
         if (request.getWarehouseCode() == null || request.getWarehouseCode().trim().isEmpty()) {
             throw new MyCustomException("Mã kho không được để trống");
         }
 
         try {
-            warehouseMapper.updateWarehouseFromRequest(request, existingWarehouse);
-            return warehouseMapper.toWarehouseDto(warehouseRepository.saveAndFlush(existingWarehouse));
+            warehouseMapper.updateWarehouseFromRequest(request, existing);
+
+            WarehouseType wt = warehouseTypeRepository.findById(request.getWarehouseTypeId())
+                    .orElseThrow(() -> new MyCustomException("WarehouseType không tồn tại"));
+            existing.setWarehouseType(wt);
+
+            return warehouseMapper.toWarehouseDto(warehouseRepository.saveAndFlush(existing));
         } catch (Exception e) {
             throw new MyCustomException("Có lỗi xảy ra trong quá trình cập nhật kho");
         }
@@ -139,18 +126,12 @@ public class WarehouseServiceImpl implements WarehouseService {
     @Override
     @Auditable(action = AuditAction.DELETE, entityName = "Warehouse", description = "Xóa kho")
     public void deleteWarehouse(Long id) {
-        Optional<Warehouse> warehouseOptional = warehouseRepository.findById(id);
-        if (warehouseOptional.isEmpty()) {
-            throw new DataExistException("Kho không tồn tại");
-        }
+        Warehouse warehouse = warehouseRepository.findById(id)
+                .orElseThrow(() -> new DataExistException("Kho không tồn tại"));
 
-        Warehouse warehouse = warehouseOptional.get();
-
-        // Check if warehouse has locations
         if (warehouse.getLocations() != null && !warehouse.getLocations().isEmpty()) {
             throw new MyCustomException("Không thể xóa kho đang có vị trí lưu trữ");
         }
-
         try {
             warehouseRepository.deleteById(id);
         } catch (Exception e) {
@@ -161,46 +142,32 @@ public class WarehouseServiceImpl implements WarehouseService {
     @Override
     @Auditable(action = AuditAction.DELETE, entityName = "Warehouse", description = "Xóa danh sách kho")
     public List<WarehouseDto> deleteAllIdWarehouses(List<Long> ids) {
-        List<WarehouseDto> warehouseDtos = new ArrayList<>();
+        List<WarehouseDto> result = new ArrayList<>();
         for (Long id : ids) {
-            Optional<Warehouse> optionalWarehouse = warehouseRepository.findById(id);
-            if (optionalWarehouse.isPresent()) {
-                Warehouse warehouse = optionalWarehouse.get();
+            Warehouse warehouse = warehouseRepository.findById(id)
+                    .orElseThrow(() -> new MyCustomException("Kho không tồn tại: " + id));
 
-                // Check if warehouse has locations
-                if (warehouse.getLocations() != null && !warehouse.getLocations().isEmpty()) {
-                    throw new MyCustomException("Không thể xóa kho đang có vị trí lưu trữ: " + warehouse.getWarehouseName());
-                }
-
-                warehouseDtos.add(warehouseMapper.toWarehouseDto(warehouse));
-                warehouseRepository.delete(warehouse);
-            } else {
-                throw new MyCustomException("Có lỗi xảy ra trong quá trình xóa danh sách kho!");
+            if (warehouse.getLocations() != null && !warehouse.getLocations().isEmpty()) {
+                throw new MyCustomException("Không thể xóa kho đang có vị trí lưu trữ: " + warehouse.getWarehouseName());
             }
+            result.add(warehouseMapper.toWarehouseDto(warehouse));
+            warehouseRepository.delete(warehouse);
         }
-        return warehouseDtos;
+        return result;
     }
 
     @Override
     @Transactional
     public void toggleActiveStatus(Long warehouseId) {
-        Optional<Warehouse> warehouseOptional = warehouseRepository.findById(warehouseId);
-        if (warehouseOptional.isEmpty()) {
-            throw new DataExistException("Kho không tồn tại");
-        }
-
-        Warehouse warehouse = warehouseOptional.get();
-        warehouse.setIsActive(!warehouse.getIsActive());
-
+        Warehouse warehouse = warehouseRepository.findById(warehouseId)
+                .orElseThrow(() -> new DataExistException("Kho không tồn tại"));
+        warehouse.setIsActive(!Boolean.TRUE.equals(warehouse.getIsActive()));
         warehouseRepository.saveAndFlush(warehouse);
     }
 
     @Override
-    public List<WarehouseDto> getWarehousesByType(String warehouseType) {
-        List<Warehouse> warehouses = warehouseRepository.findByWarehouseTypeAndIsActiveTrue(warehouseType);
-        return warehouses.stream()
-                .map(warehouseMapper::toWarehouseDto)
-                .collect(java.util.stream.Collectors.toList());
+    public List<WarehouseDto> getWarehousesByTypeId(Long warehouseTypeId) {
+        return warehouseRepository.findByWarehouseTypeIdAndIsActiveTrue(warehouseTypeId)
+                .stream().map(warehouseMapper::toWarehouseDto).toList();
     }
 }
-

@@ -23,7 +23,8 @@ public interface WarehouseService {
     void deleteWarehouse(Long id);
     List<WarehouseDto> deleteAllIdWarehouses(List<Long> ids);
 
-    // Additional business methods
     void toggleActiveStatus(Long warehouseId);
-    List<WarehouseDto> getWarehousesByType(String warehouseType);
+
+    // đổi sang typeId
+    List<WarehouseDto> getWarehousesByTypeId(Long warehouseTypeId);
 }

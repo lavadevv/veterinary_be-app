@@ -10,9 +10,15 @@ public class ProductionOrderMaterialDto {
     private Long productionOrderId;
     private String orderCode;
 
+    // Material Batch Item info
+    private Long materialBatchItemId;
+    private String materialBatchItemCode;
+    
+    // Parent Batch info
     private Long materialBatchId;
     private String materialBatchNumber;
 
+    // Material info
     private Long materialId;
     private String materialCode;
     private String materialName;

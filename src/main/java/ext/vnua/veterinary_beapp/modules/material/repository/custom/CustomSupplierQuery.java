@@ -3,10 +3,12 @@ package ext.vnua.veterinary_beapp.modules.material.repository.custom;
 import ext.vnua.veterinary_beapp.common.Constant;
 import ext.vnua.veterinary_beapp.common.CriteriaBuilderUtil;
 import ext.vnua.veterinary_beapp.modules.material.model.Supplier;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
+import org.springframework.data.jpa.domain.Specification;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.data.jpa.domain.Specification;
 
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -24,55 +26,86 @@ public class CustomSupplierQuery {
         private String countryOfOrigin;
         private LocalDate gmpExpiryFromDate;
         private LocalDate gmpExpiryToDate;
+        /** ví dụ: "id", "supplierName", "manufacturerName", "manufacturerCode", ... */
         private String sortField;
+        /** "ASC" | "DESC" */
         private String sortType;
     }
 
     public static Specification<Supplier> getFilterSupplier(SupplierFilterParam param) {
-        return ((root, query, criteriaBuilder) -> {
+        return (root, query, cb) -> {
+            // ========= FETCH để tránh LazyInitializationException (chỉ áp cho query không phải COUNT) =========
+            Class<?> resultType = query.getResultType();
+            boolean isCountQuery = Long.class.equals(resultType) || long.class.equals(resultType);
+            if (!isCountQuery) {
+                // fetch-join manufacturer giúp initialize quan hệ khi map DTO ở trong transaction hiện tại
+                root.fetch("manufacturer", JoinType.LEFT);
+                // do có join/fetch => cần distinct để loại trùng
+                query.distinct(true);
+            }
+
+            // JOIN (không fetch) để dùng trong search/sort (COUNT query vẫn cần JOIN để điều kiện chạy được)
+            Join<Object, Object> mfJoin = root.join("manufacturer", JoinType.LEFT);
+
             List<Predicate> predicates = new ArrayList<>();
 
-            if (param.keywords != null && !param.keywords.trim().isEmpty()) {
-                Predicate supplierNamePredicate = CriteriaBuilderUtil.createPredicateForSearchInsensitive(
-                        root, criteriaBuilder, param.keywords, "supplierName");
-                Predicate supplierCodePredicate = CriteriaBuilderUtil.createPredicateForSearchInsensitive(
-                        root, criteriaBuilder, param.keywords, "supplierCode");
-                Predicate manufacturerNamePredicate = CriteriaBuilderUtil.createPredicateForSearchInsensitive(
-                        root, criteriaBuilder, param.keywords, "manufacturerName");
+            // ====== Keyword search ======
+            if (param.getKeywords() != null && !param.getKeywords().trim().isEmpty()) {
+                String kw = param.getKeywords().trim();
+                String kwLike = "%" + kw.toLowerCase() + "%";
 
-                predicates.add(criteriaBuilder.or(supplierNamePredicate, supplierCodePredicate, manufacturerNamePredicate));
+                // Supplier: supplierName, supplierCode (util insensitive có thể dùng unaccent nếu bạn đã cấu hình)
+                Predicate pSupplierName = CriteriaBuilderUtil.createPredicateForSearchInsensitive(
+                        root, cb, kw, "supplierName");
+                Predicate pSupplierCode = CriteriaBuilderUtil.createPredicateForSearchInsensitive(
+                        root, cb, kw, "supplierCode");
+
+                // Manufacturer: manufacturerName, manufacturerCode
+                Predicate pMfName = cb.like(cb.lower(mfJoin.get("manufacturerName")), kwLike);
+                Predicate pMfCode = cb.like(cb.lower(mfJoin.get("manufacturerCode")), kwLike);
+
+                predicates.add(cb.or(pSupplierName, pSupplierCode, pMfName, pMfCode));
             }
 
-            if (param.isActive != null) {
-                predicates.add(criteriaBuilder.equal(root.get("isActive"), param.isActive));
+            // ====== Các filter khác ======
+            if (param.getIsActive() != null) {
+                predicates.add(cb.equal(root.get("isActive"), param.getIsActive()));
             }
 
-            if (param.countryOfOrigin != null && !param.countryOfOrigin.trim().isEmpty()) {
-                predicates.add(criteriaBuilder.equal(root.get("countryOfOrigin"), param.countryOfOrigin));
+            if (param.getCountryOfOrigin() != null && !param.getCountryOfOrigin().trim().isEmpty()) {
+                predicates.add(cb.equal(root.get("countryOfOrigin"), param.getCountryOfOrigin().trim()));
             }
 
-            // Filter by GMP expiry date range
-            if (param.gmpExpiryFromDate != null && param.gmpExpiryToDate != null) {
-                predicates.add(criteriaBuilder.between(root.get("gmpExpiryDate"),
-                        param.gmpExpiryFromDate, param.gmpExpiryToDate));
-            } else if (param.gmpExpiryFromDate != null) {
-                predicates.add(criteriaBuilder.greaterThanOrEqualTo(root.get("gmpExpiryDate"), param.gmpExpiryFromDate));
-            } else if (param.gmpExpiryToDate != null) {
-                predicates.add(criteriaBuilder.lessThanOrEqualTo(root.get("gmpExpiryDate"), param.gmpExpiryToDate));
+            if (param.getGmpExpiryFromDate() != null && param.getGmpExpiryToDate() != null) {
+                predicates.add(cb.between(root.get("gmpExpiryDate"),
+                        param.getGmpExpiryFromDate(), param.getGmpExpiryToDate()));
+            } else if (param.getGmpExpiryFromDate() != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("gmpExpiryDate"), param.getGmpExpiryFromDate()));
+            } else if (param.getGmpExpiryToDate() != null) {
+                predicates.add(cb.lessThanOrEqualTo(root.get("gmpExpiryDate"), param.getGmpExpiryToDate()));
             }
 
-            // Sorting
-            if (param.sortField != null && !param.sortField.equals("")) {
-                if (param.sortType != null && param.sortType.equals(Constant.SortType.ASC)) {
-                    query.orderBy(criteriaBuilder.asc(root.get(param.sortField)));
+            // ====== Sorting ======
+            String sortField = param.getSortField();
+            String sortType  = param.getSortType();
+            if (sortField != null && !sortField.isBlank()) {
+                boolean asc = Constant.SortType.ASC.equalsIgnoreCase(sortType);
+
+                // sort theo field của Manufacturer
+                if ("manufacturerName".equals(sortField)) {
+                    query.orderBy(asc ? cb.asc(mfJoin.get("manufacturerName")) : cb.desc(mfJoin.get("manufacturerName")));
+                } else if ("manufacturerCode".equals(sortField)) {
+                    query.orderBy(asc ? cb.asc(mfJoin.get("manufacturerCode")) : cb.desc(mfJoin.get("manufacturerCode")));
                 } else {
-                    query.orderBy(criteriaBuilder.desc(root.get(param.sortField)));
+                    // sort theo field của Supplier (root)
+                    query.orderBy(asc ? cb.asc(root.get(sortField)) : cb.desc(root.get(sortField)));
                 }
             } else {
-                query.orderBy(criteriaBuilder.desc(root.get("id")));
+                // mặc định: id DESC
+                query.orderBy(cb.desc(root.get("id")));
             }
 
-            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
-        });
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
     }
 }

@@ -1,11 +1,16 @@
 package ext.vnua.veterinary_beapp.modules.pcost.model;
 
 import ext.vnua.veterinary_beapp.modules.audits.entity.AuditableEntity;
+import ext.vnua.veterinary_beapp.modules.material.model.UnitOfMeasure;
 import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
+@NamedEntityGraph(
+        name = "LaborRate.withUnitOfMeasure",
+        attributeNodes = @NamedAttributeNode("unitOfMeasure")
+)
 @Entity
 @Table(name = "labor_rates",
         indexes = {
@@ -27,9 +32,10 @@ public class LaborRate extends AuditableEntity {
     @Column(name = "name", length = 300)
     private String name;
 
-    /** Đơn vị tính – thường là "hour" hoặc "shift" */
-    @Column(name = "unit", length = 50)
-    private String unit = "hour";
+    /** Đơn vị tính – liên kết với UnitOfMeasure module */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "unit_of_measure_id", foreignKey = @ForeignKey(name = "fk_labor_rate_uom"))
+    private UnitOfMeasure unitOfMeasure;
 
     /** Đơn giá/đơn vị (VD 25000.00) */
     @Column(name = "price_per_unit", precision = 18, scale = 2, nullable = false)

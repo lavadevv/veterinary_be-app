@@ -14,10 +14,10 @@ import org.mapstruct.factory.Mappers;
 public interface LocationMapper {
     LocationMapper INSTANCE = Mappers.getMapper(LocationMapper.class);
 
-    @Mapping(source = "warehouse", target = "warehouseDto")
+    @Mapping(target = "warehouseId", source = "warehouse.id")
     LocationDto toLocationDto(Location location);
 
-    @Mapping(source = "warehouseDto", target = "warehouse")
+    @Mapping(target = "warehouse", ignore = true)
     Location toLocation(LocationDto locationDto);
 
     @Mapping(target = "id", ignore = true)
@@ -34,6 +34,17 @@ public interface LocationMapper {
     @Mapping(target = "warehouse", ignore = true)
     @Mapping(target = "materialBatches", ignore = true)
     void updateLocationFromRequest(UpdateLocationRequest request, @MappingTarget Location location);
+
+
+    @Mapping(target = "warehouse", ignore = true)
+    @Mapping(target = "materialBatches", ignore = true)
+    @Mapping(target = "createdDate", ignore = true)
+    @Mapping(target = "lastModifiedDate", ignore = true)
+    @Mapping(target = "createdBy", ignore = true)
+    @Mapping(target = "lastModifiedBy", ignore = true)
+    void updateLocation(UpdateLocationRequest req, @MappingTarget Location entity);
+
+
 
     @AfterMapping
     default void afterMappingCreate(@MappingTarget Location location, CreateLocationRequest request) {

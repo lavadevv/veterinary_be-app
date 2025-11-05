@@ -2,12 +2,18 @@ package ext.vnua.veterinary_beapp.modules.material.controller;
 
 import ext.vnua.veterinary_beapp.dto.response.BaseResponse;
 import ext.vnua.veterinary_beapp.modules.material.dto.entity.MaterialBatchDto;
+import ext.vnua.veterinary_beapp.modules.material.dto.entity.MaterialBatchItemDto;
+import ext.vnua.veterinary_beapp.modules.material.dto.entity.MaterialBatchItemActiveIngredientDto;
+import ext.vnua.veterinary_beapp.modules.material.dto.request.materialBatch.CreateMaterialBatchContainerRequest;
+import ext.vnua.veterinary_beapp.modules.material.dto.request.materialBatch.CreateMaterialBatchItemRequest;
 import ext.vnua.veterinary_beapp.modules.material.dto.request.materialBatch.CreateMaterialBatchRequest;
 import ext.vnua.veterinary_beapp.modules.material.dto.request.materialBatch.GetMaterialBatchRequest;
 import ext.vnua.veterinary_beapp.modules.material.dto.request.materialBatch.UpdateMaterialBatchRequest;
-import ext.vnua.veterinary_beapp.modules.material.mapper.MaterialBatchMapper;
-import ext.vnua.veterinary_beapp.modules.material.model.MaterialBatch;
+import ext.vnua.veterinary_beapp.modules.material.dto.request.materialBatch.CreateTestResultRequest;
+import ext.vnua.veterinary_beapp.modules.material.dto.request.materialBatch.UpdateTestResultRequest;
+import ext.vnua.veterinary_beapp.modules.material.dto.response.MaterialBatchDetailDTO;
 import ext.vnua.veterinary_beapp.modules.material.service.MaterialBatchService;
+import ext.vnua.veterinary_beapp.modules.material.service.MaterialBatchItemService;
 import io.swagger.annotations.ApiOperation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +25,6 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/material-batches")
@@ -27,19 +32,16 @@ import java.util.stream.Collectors;
 public class MaterialBatchController {
 
     private final MaterialBatchService materialBatchService;
-
-    private final MaterialBatchMapper materialBathMapper;
+    private final MaterialBatchItemService materialBatchItemService;
 
     @GetMapping
     @ApiOperation(value = "Lấy danh sách lô vật liệu có phân trang và lọc")
     public ResponseEntity<?> getAllMaterialBatches(
             @Valid @ModelAttribute GetMaterialBatchRequest request) {
 
-        Page<MaterialBatch> page = materialBatchService.getAllMaterialBatch(request, PageRequest.of(request.getStart(), request.getLimit()));
+        Page<MaterialBatchDto> page = materialBatchService.getAllMaterialBatch(request, PageRequest.of(request.getStart(), request.getLimit()));
 
-        return BaseResponse.successListData(page.getContent().stream()
-                .map(materialBathMapper::toMaterialBatchDto)
-                .collect(Collectors.toList()), (int) page.getTotalElements());
+        return BaseResponse.successListData(page.getContent(), (int) page.getTotalElements());
     }
 
     @GetMapping("/{id}")
@@ -85,13 +87,90 @@ public class MaterialBatchController {
     }
 
     @PostMapping
-    @ApiOperation(value = "Tạo mới lô vật liệu")
+    @ApiOperation(value = "Tạo mới lô vật liệu (deprecated - chỉ tương thích cũ)")
     public ResponseEntity<?> createMaterialBatch(
             @Valid @RequestBody CreateMaterialBatchRequest request) {
 
         MaterialBatchDto materialBatchDto = materialBatchService.createMaterialBatch(request);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(materialBatchDto);
+    }
+
+    @PostMapping("/container")
+    @ApiOperation(value = "Tạo mới lô container (chỉ tạo container, thêm items sau)")
+    public ResponseEntity<?> createMaterialBatchContainer(
+            @Valid @RequestBody CreateMaterialBatchContainerRequest request) {
+
+        MaterialBatchDto materialBatchDto = materialBatchService.createMaterialBatchContainer(request);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(materialBatchDto);
+    }
+
+    @PostMapping("/{batchId}/items")
+    @ApiOperation(value = "Thêm vật liệu (item) vào lô container")
+    public ResponseEntity<?> addItemToBatch(
+            @PathVariable Long batchId,
+            @Valid @RequestBody CreateMaterialBatchItemRequest request) {
+
+        MaterialBatchDto updatedBatch = materialBatchService.addItemToBatch(batchId, request);
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(updatedBatch);
+    }
+
+    @GetMapping("/{batchId}/items")
+    @ApiOperation(value = "Lấy danh sách items trong lô")
+    public ResponseEntity<?> getBatchItems(@PathVariable Long batchId) {
+        List<MaterialBatchItemDto> items = materialBatchItemService.getItemsByBatchId(batchId);
+        return BaseResponse.successListData(items, items.size());
+    }
+
+    @GetMapping("/items/{itemId}")
+    @ApiOperation(value = "Lấy thông tin chi tiết một item")
+    public ResponseEntity<?> getItemById(@PathVariable Long itemId) {
+        MaterialBatchItemDto item = materialBatchItemService.getItemById(itemId);
+        return ResponseEntity.ok(item);
+    }
+
+    @GetMapping("/items/{itemId}/active-ingredients")
+    @ApiOperation(value = "Lấy danh sách hoạt chất của item")
+    public ResponseEntity<?> getItemActiveIngredients(@PathVariable Long itemId) {
+        List<MaterialBatchItemActiveIngredientDto> ingredients = 
+            materialBatchItemService.getActiveIngredientsByItemId(itemId);
+        return BaseResponse.successListData(ingredients, ingredients.size());
+    }
+
+    @GetMapping("/active-ingredients/{ingredientId}")
+    @ApiOperation(value = "Lấy thông tin chi tiết một hoạt chất")
+    public ResponseEntity<?> getActiveIngredientById(@PathVariable Long ingredientId) {
+        MaterialBatchItemActiveIngredientDto ingredient = 
+            materialBatchItemService.getActiveIngredientById(ingredientId);
+        return ResponseEntity.ok(ingredient);
+    }
+
+    @PostMapping("/test-results")
+    @ApiOperation(value = "Tạo mới kết quả kiểm nghiệm (COA + KQPT)")
+    public ResponseEntity<?> createTestResult(
+            @Valid @RequestBody CreateTestResultRequest request) {
+        MaterialBatchItemActiveIngredientDto result = 
+            materialBatchItemService.createTestResult(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(result);
+    }
+
+    @PutMapping("/test-results/{id}")
+    @ApiOperation(value = "Cập nhật kết quả kiểm nghiệm")
+    public ResponseEntity<?> updateTestResult(
+            @PathVariable Long id,
+            @Valid @RequestBody UpdateTestResultRequest request) {
+        MaterialBatchItemActiveIngredientDto result = 
+            materialBatchItemService.updateTestResult(id, request);
+        return ResponseEntity.ok(result);
+    }
+
+    @DeleteMapping("/test-results/{id}")
+    @ApiOperation(value = "Xóa kết quả kiểm nghiệm")
+    public ResponseEntity<?> deleteTestResult(@PathVariable Long id) {
+        materialBatchItemService.deleteTestResult(id);
+        return ResponseEntity.ok("Đã xóa kết quả kiểm nghiệm với ID: " + id);
     }
 
     @PutMapping("/{id}")
@@ -210,4 +289,44 @@ public class MaterialBatchController {
 
         return ResponseEntity.ok(oldestBatches);
     }
+
+    // ===== DEPRECATED: Active Ingredients Management =====
+    // These endpoints are deprecated. Use MaterialBatchItem endpoints instead.
+    // Active ingredients are now managed through MaterialBatchItemActiveIngredient
+    
+    /*
+    @PostMapping("/{id}/active-ingredients")
+    @ApiOperation(value = "Thêm hoạt chất vào lô vật liệu")
+    public ResponseEntity<?> addActiveIngredient(
+            @PathVariable Long id,
+            @Valid @RequestBody MaterialBatchActiveIngredientRequest request) {
+        MaterialBatchActiveIngredientDTO result = activeIngredientService.addActiveIngredientToBatch(id, request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(result);
+    }
+
+    @PostMapping("/{id}/active-ingredients/batch")
+    @ApiOperation(value = "Thêm nhiều hoạt chất vào lô vật liệu")
+    public ResponseEntity<?> addMultipleActiveIngredients(
+            @PathVariable Long id,
+            @Valid @RequestBody List<MaterialBatchActiveIngredientRequest> requests) {
+        List<MaterialBatchActiveIngredientDTO> result = activeIngredientService.addMultipleActiveIngredients(id, requests);
+        return BaseResponse.successListData(result, result.size());
+    }
+
+    @PutMapping("/active-ingredients/{ingredientId}")
+    @ApiOperation(value = "Cập nhật thông tin hoạt chất trong lô")
+    public ResponseEntity<?> updateActiveIngredient(
+            @PathVariable Long ingredientId,
+            @Valid @RequestBody MaterialBatchActiveIngredientRequest request) {
+        MaterialBatchActiveIngredientDTO result = activeIngredientService.updateActiveIngredient(ingredientId, request);
+        return BaseResponse.successData(result);
+    }
+
+    @DeleteMapping("/active-ingredients/{ingredientId}")
+    @ApiOperation(value = "Xóa hoạt chất khỏi lô vật liệu")
+    public ResponseEntity<?> deleteActiveIngredient(@PathVariable Long ingredientId) {
+        activeIngredientService.deleteActiveIngredient(ingredientId);
+        return ResponseEntity.ok().build();
+    }
+    */
 }

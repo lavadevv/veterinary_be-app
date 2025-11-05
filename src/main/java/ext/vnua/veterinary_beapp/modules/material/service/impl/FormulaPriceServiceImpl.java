@@ -34,7 +34,7 @@ public class FormulaPriceServiceImpl implements FormulaPriceService {
         MaterialPriceHistory h = new MaterialPriceHistory();
         h.setMaterial(m);
         h.setPrice(req.getNewPrice());
-        h.setUom(m.getUnitOfMeasure());
+        h.setUom(m.getUnitOfMeasure().getName());
         h.setEffectiveDate(LocalDate.now());
         h.setNote(req.getNote());
         historyRepo.save(h);

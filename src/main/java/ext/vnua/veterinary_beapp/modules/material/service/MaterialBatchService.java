@@ -3,9 +3,11 @@ package ext.vnua.veterinary_beapp.modules.material.service;
 import ext.vnua.veterinary_beapp.modules.material.dto.entity.MaterialBatchDto;
 import ext.vnua.veterinary_beapp.modules.material.dto.request.materialBatch.BatchQuantityAdjustmentRequest;
 import ext.vnua.veterinary_beapp.modules.material.dto.request.materialBatch.BatchTransferRequest;
+import ext.vnua.veterinary_beapp.modules.material.dto.request.materialBatch.CreateMaterialBatchContainerRequest;
+import ext.vnua.veterinary_beapp.modules.material.dto.request.materialBatch.CreateMaterialBatchItemRequest;
 import ext.vnua.veterinary_beapp.modules.material.dto.request.materialBatch.CreateMaterialBatchRequest;
 import ext.vnua.veterinary_beapp.modules.material.dto.request.materialBatch.UpdateMaterialBatchRequest;
-import ext.vnua.veterinary_beapp.modules.material.model.MaterialBatch;
+import ext.vnua.veterinary_beapp.modules.material.dto.response.MaterialBatchDetailDTO;
 import ext.vnua.veterinary_beapp.modules.material.repository.custom.CustomMaterialBatchQuery;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -15,8 +17,8 @@ import java.time.LocalDate;
 import java.util.List;
 
 public interface MaterialBatchService {
-    Page<MaterialBatch> getAllMaterialBatch(CustomMaterialBatchQuery.MaterialBatchFilterParam param,
-                                            PageRequest pageRequest);
+    Page<MaterialBatchDto> getAllMaterialBatch(CustomMaterialBatchQuery.MaterialBatchFilterParam param,
+                                               PageRequest pageRequest);
 
     MaterialBatchDto selectMaterialBatchById(Long id);
     MaterialBatchDto selectMaterialBatchByBatchNumber(String batchNumber);
@@ -26,6 +28,8 @@ public interface MaterialBatchService {
     List<MaterialBatchDto> selectMaterialBatchesByLocation(Long locationId);
 
     MaterialBatchDto createMaterialBatch(CreateMaterialBatchRequest request);
+    MaterialBatchDto createMaterialBatchContainer(CreateMaterialBatchContainerRequest request);
+    MaterialBatchDto addItemToBatch(Long batchId, CreateMaterialBatchItemRequest request);
     MaterialBatchDto updateMaterialBatch(UpdateMaterialBatchRequest request);
 
     void deleteMaterialBatch(Long id);
@@ -61,5 +65,22 @@ public interface MaterialBatchService {
     List<MaterialBatchDto> getFailedTestBatches();
     void approveTestBatch(Long batchId, String testResults);
     void rejectTestBatch(Long batchId, String rejectionReason);
+
+    // ========== NEW: Batch Detail with Active Ingredients ==========
+    
+    /**
+     * Lấy thông tin chi tiết lô bao gồm hoạt chất, COA, KQPT
+     */
+    MaterialBatchDetailDTO getBatchDetailWithIngredients(Long batchId);
+    
+    /**
+     * Lấy danh sách lô với thông tin đầy đủ
+     */
+    List<MaterialBatchDetailDTO> getAllBatchesWithDetails();
+    
+    /**
+     * Lấy danh sách lô có hoạt chất không đạt chuẩn (KQPT/COA < 90% hoặc > 110%)
+     */
+    List<MaterialBatchDetailDTO> getBatchesWithUnqualifiedIngredients();
 }
 

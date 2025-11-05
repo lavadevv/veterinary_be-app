@@ -1,12 +1,15 @@
+// File: ext/vnua/veterinary_beapp/modules/product/repository/custom/CustomProductFormulaQuery.java
 package ext.vnua.veterinary_beapp.modules.product.repository.custom;
 
 import ext.vnua.veterinary_beapp.common.Constant;
 import ext.vnua.veterinary_beapp.common.CriteriaBuilderUtil;
 import ext.vnua.veterinary_beapp.modules.product.enums.FormulationType;
 import ext.vnua.veterinary_beapp.modules.product.enums.ProductCategory;
+import ext.vnua.veterinary_beapp.modules.product.model.FormulaHeader;
 import ext.vnua.veterinary_beapp.modules.product.model.Product;
 import ext.vnua.veterinary_beapp.modules.product.model.ProductFormula;
 import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -17,7 +20,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Specification filter cho danh sách công thức toàn cục */
+/** Specification filter cho danh sách phiên bản công thức (qua header + products) */
 public class CustomProductFormulaQuery {
     private CustomProductFormulaQuery(){}
 
@@ -29,22 +32,16 @@ public class CustomProductFormulaQuery {
         private String version;
         private Boolean active;
 
-        /** lọc theo ngày tạo (createdDate) – dạng yyyy-MM-dd */
         private LocalDate fromCreatedDate;
         private LocalDate toCreatedDate;
 
-        /** tìm kiếm chung: productCode / productName / version */
         private String keywords;
-
-        /** nếu Product có category/label thì có thể lọc theo đây (optional) */
         private String productLabel;
 
         private ProductCategory productCategory;
         private FormulationType formulationType;
 
-
-        /** sắp xếp động */
-        private String sortField; // ví dụ: createdDate, version, isActive
+        private String sortField; // createdDate, version, isActive
         private String sortType;  // ASC | DESC
     }
 
@@ -52,8 +49,9 @@ public class CustomProductFormulaQuery {
         return (root, query, cb) -> {
             List<Predicate> ps = new ArrayList<>();
 
-            // join product để lọc theo thông tin sản phẩm
-            Join<ProductFormula, Product> pj = root.join("product");
+            // join header & products
+            Join<ProductFormula, FormulaHeader> hj = root.join("header");
+            Join<FormulaHeader, Product> pj = hj.join("products", JoinType.LEFT);
 
             if (p.getProductId() != null) {
                 ps.add(cb.equal(pj.get("id"), p.getProductId()));
@@ -81,15 +79,17 @@ public class CustomProductFormulaQuery {
             }
 
             if (p.getProductLabel() != null && !p.getProductLabel().isBlank()) {
-                // tìm theo brandName
                 ps.add(CriteriaBuilderUtil.createPredicateForSearchInsensitive(pj, cb, p.getProductLabel(), "brandName"));
             }
 
             if (p.getKeywords() != null && !p.getKeywords().isBlank()) {
-                Predicate codeLike  = CriteriaBuilderUtil.createPredicateForSearchInsensitive(pj, cb, p.getKeywords(), "productCode");
-                Predicate nameLike  = CriteriaBuilderUtil.createPredicateForSearchInsensitive(pj, cb, p.getKeywords(), "productName");
-                Predicate verLike   = CriteriaBuilderUtil.createPredicateForSearchInsensitive(root, cb, p.getKeywords(), "version");
-                ps.add(cb.or(codeLike, nameLike, verLike));
+                Predicate codeLike   = CriteriaBuilderUtil.createPredicateForSearchInsensitive(pj, cb, p.getKeywords(), "productCode");
+                Predicate nameLike   = CriteriaBuilderUtil.createPredicateForSearchInsensitive(pj, cb, p.getKeywords(), "productName");
+                Predicate verLike    = CriteriaBuilderUtil.createPredicateForSearchInsensitive(root, cb, p.getKeywords(), "version");
+                // allow search by header formulaCode/formulaName as well
+                Predicate hCodeLike  = CriteriaBuilderUtil.createPredicateForSearchInsensitive(hj, cb, p.getKeywords(), "formulaCode");
+                Predicate hNameLike  = CriteriaBuilderUtil.createPredicateForSearchInsensitive(hj, cb, p.getKeywords(), "formulaName");
+                ps.add(cb.or(codeLike, nameLike, verLike, hCodeLike, hNameLike));
             }
 
             if (p.getProductCategory() != null) {
@@ -98,12 +98,8 @@ public class CustomProductFormulaQuery {
             if (p.getFormulationType() != null) {
                 ps.add(cb.equal(pj.get("formulationType"), p.getFormulationType()));
             }
-            if (p.getProductLabel() != null && !p.getProductLabel().isBlank()) {
-                ps.add(CriteriaBuilderUtil.createPredicateForSearchInsensitive(pj, cb, p.getProductLabel(), "brandName"));
-            }
 
-
-            // sort mặc định
+            // sort
             if (p.getSortField() != null && !p.getSortField().isBlank()) {
                 if (Constant.SortType.ASC.equalsIgnoreCase(p.getSortType())) {
                     query.orderBy(cb.asc(root.get(p.getSortField())));

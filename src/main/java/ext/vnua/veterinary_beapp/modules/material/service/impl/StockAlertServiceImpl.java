@@ -263,8 +263,14 @@ public class StockAlertServiceImpl implements StockAlertService {
         MaterialBatch materialBatch = materialBatchRepository.findById(materialBatchId)
                 .orElseThrow(() -> new DataExistException("Lô vật liệu không tồn tại"));
 
+        // TODO: REFACTOR - MaterialBatch no longer has direct Material reference
+        // Need to iterate through batchItems to create alerts for each material
+        throw new UnsupportedOperationException(
+            "Alert creation needs refactoring for new MaterialBatchItem structure");
+        
+        /*
         StockAlert stockAlert = new StockAlert();
-        stockAlert.setMaterial(materialBatch.getMaterial());
+        stockAlert.setMaterial(materialBatch.getMaterial());  // NO LONGER VALID
         stockAlert.setMaterialBatch(materialBatch);
         stockAlert.setAlertType(StockAlert.AlertType.EXPIRED);
         stockAlert.setAlertMessage(String.format("Lô hàng đã hết hạn: %s (Hết hạn: %s)",
@@ -273,6 +279,7 @@ public class StockAlertServiceImpl implements StockAlertService {
         stockAlert.setIsResolved(false);
 
         stockAlertRepository.saveAndFlush(stockAlert);
+        */
     }
 
     @Override
@@ -286,8 +293,13 @@ public class StockAlertServiceImpl implements StockAlertService {
         MaterialBatch materialBatch = materialBatchRepository.findById(materialBatchId)
                 .orElseThrow(() -> new DataExistException("Lô vật liệu không tồn tại"));
 
+        // TODO: REFACTOR - MaterialBatch no longer has direct Material reference
+        throw new UnsupportedOperationException(
+            "Alert creation needs refactoring for new MaterialBatchItem structure");
+        
+        /*
         StockAlert stockAlert = new StockAlert();
-        stockAlert.setMaterial(materialBatch.getMaterial());
+        stockAlert.setMaterial(materialBatch.getMaterial());  // NO LONGER VALID
         stockAlert.setMaterialBatch(materialBatch);
         stockAlert.setAlertType(StockAlert.AlertType.NEAR_EXPIRY);
         stockAlert.setAlertMessage(String.format("Lô hàng sắp hết hạn: %s (Hết hạn trong %d ngày)",
@@ -296,6 +308,7 @@ public class StockAlertServiceImpl implements StockAlertService {
         stockAlert.setIsResolved(false);
 
         stockAlertRepository.saveAndFlush(stockAlert);
+        */
     }
 
     @Override
@@ -331,8 +344,13 @@ public class StockAlertServiceImpl implements StockAlertService {
         MaterialBatch materialBatch = materialBatchRepository.findById(materialBatchId)
                 .orElseThrow(() -> new DataExistException("Lô vật liệu không tồn tại"));
 
+        // TODO: REFACTOR - MaterialBatch no longer has direct Material reference
+        throw new UnsupportedOperationException(
+            "Alert creation needs refactoring for new MaterialBatchItem structure");
+        
+        /*
         StockAlert stockAlert = new StockAlert();
-        stockAlert.setMaterial(materialBatch.getMaterial());
+        stockAlert.setMaterial(materialBatch.getMaterial());  // NO LONGER VALID
         stockAlert.setMaterialBatch(materialBatch);
         stockAlert.setAlertType(StockAlert.AlertType.QUARANTINE);
         stockAlert.setAlertMessage(String.format("Lô hàng cần cách ly: %s (Lý do: %s)",
@@ -341,6 +359,7 @@ public class StockAlertServiceImpl implements StockAlertService {
         stockAlert.setIsResolved(false);
 
         stockAlertRepository.saveAndFlush(stockAlert);
+        */
     }
 
     @Override

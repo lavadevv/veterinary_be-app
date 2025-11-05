@@ -17,10 +17,11 @@ public class UpdateUserRequest {
     private String address;
     @NotBlank(message = "Số điện thoại không được để trống")
     private String phone;
-    @NotBlank(message = "Phòng ban không được để trống")
-    private String department;
-    @NotBlank(message = "Chức vụ không được để trống")
-    private String position;
+
+    @NotNull(message = "Phòng ban không được để trống")
+    private Long departmentId;
+    @NotNull(message = "Chức vụ không được để trống")
+    private Long positionId;
 
     private boolean block;
 

@@ -26,4 +26,9 @@ public interface LocationService {
     void updateCurrentCapacity(Long locationId, Double newCapacity);
     void toggleAvailability(Long locationId);
     List<LocationDto> getAvailableLocationsByWarehouse(Long warehouseId);
+    
+    // Capacity management methods
+    void recalculateLocationCapacity(Long locationId);
+    Double getAvailableCapacity(Long locationId);
+    Double getOccupancyPercentage(Long locationId);
 }

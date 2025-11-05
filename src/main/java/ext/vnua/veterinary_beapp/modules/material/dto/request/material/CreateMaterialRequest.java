@@ -1,72 +1,79 @@
+// File: ext/vnua/veterinary_beapp/modules/material/dto/request/material/CreateMaterialRequest.java
 package ext.vnua.veterinary_beapp.modules.material.dto.request.material;
 
-import ext.vnua.veterinary_beapp.modules.material.enums.MaterialForm;
-import ext.vnua.veterinary_beapp.modules.material.enums.MaterialType;
+import ext.vnua.veterinary_beapp.modules.material.dto.request.activeIngredient.MaterialActiveIngredientRequest;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import lombok.Data;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 @Data
 public class CreateMaterialRequest {
 
-    @NotBlank @Size(max = 50)
+    @NotBlank(message = "Mã vật liệu không được để trống")
+    @Size(max = 50, message = "Mã vật liệu không được vượt quá 50 ký tự")
     private String materialCode;
 
-    @NotBlank @Size(max = 255)
+    @NotBlank(message = "Tên vật liệu không được để trống")
+    @Size(max = 255, message = "Tên vật liệu không được vượt quá 255 ký tự")
     private String materialName;
 
-    @Size(max = 100)
-    private String shortName;
+    @Size(max = 150, message = "Tên quốc tế không được vượt quá 150 ký tự")
+    private String internationalName;
 
-    @NotNull
-    private MaterialType materialType;
+    @NotNull(message = "Loại vật liệu (category) không được để trống")
+    @Positive(message = "ID loại vật liệu phải > 0")
+    private Long materialCategoryId;
 
-    private MaterialForm materialForm;
+    @Positive(message = "ID dạng vật liệu phải > 0")
+    private Long materialFormTypeId;
 
-    @Size(max = 1000)
-    private String activeIngredient;
+    @Valid
+    private List<MaterialActiveIngredientRequest> activeIngredients;
 
-    @DecimalMin("0.0") @DecimalMax("100.0")
+    @DecimalMin(value = "0.0", message = "Độ tinh khiết không được âm")
+    @DecimalMax(value = "100.0", message = "Độ tinh khiết không được vượt quá 100%")
     private BigDecimal purityPercentage;
 
-    @DecimalMin("0.0")
+    @DecimalMin(value = "0.0", message = "IU/gram không được âm")
     private BigDecimal iuPerGram;
 
-    @Size(max = 50)
+    @Size(max = 50, message = "Màu sắc không được vượt quá 50 ký tự")
     private String color;
 
-    @Size(max = 100)
+    @Size(max = 100, message = "Mùi không được vượt quá 100 ký tự")
     private String odor;
 
-    @DecimalMin("0.0") @DecimalMax("100.0")
+    @DecimalMin(value = "0.0", message = "Độ ẩm không được âm")
+    @DecimalMax(value = "100.0", message = "Độ ẩm không được vượt quá 100%")
     private BigDecimal moistureContent;
 
-    @DecimalMin("0.0")
+    @DecimalMin(value = "0.0", message = "Độ nhớt không được âm")
     private BigDecimal viscosity;
 
-    @NotBlank @Size(max = 20)
-    private String unitOfMeasure;
+    @NotNull(message = "Đơn vị đo không được để trống")
+    @Positive(message = "ID đơn vị đo phải > 0")
+    private Long unitOfMeasureId;
 
-    @Size(max = 500)
+    @Size(max = 500, message = "Tiêu chuẩn áp dụng không được vượt quá 500 ký tự")
     private String standardApplied;
 
-    @NotNull @Min(1)
+    @Positive(message = "ID nhà cung cấp phải > 0")
     private Long supplierId;
 
-    // NGƯỠNG CẢNH BÁO — giữ ở master
-    @DecimalMin("0.0")
+    @DecimalMin(value = "0.0", message = "Mức tồn kho tối thiểu không được âm")
     private BigDecimal minimumStockLevel;
 
-    @DecimalMin("0.0")
+    @DecimalMin(value = "0.0", message = "Giá cố định không được âm")
     private BigDecimal fixedPrice;
 
-    // Cho phép null; entity default = false
     private Boolean requiresColdStorage;
 
-    @Size(max = 1000)
-    private String specialHandling;
+    @NotNull(message = "Trạng thái hoạt động không được để trống")
+    private Boolean isActive;
 
-    @Size(max = 1000)
+    @Size(max = 1000, message = "Ghi chú không được vượt quá 1000 ký tự")
     private String notes;
 }

@@ -5,7 +5,6 @@ import ext.vnua.veterinary_beapp.modules.material.dto.entity.MaterialDto;
 import ext.vnua.veterinary_beapp.modules.material.dto.request.material.CreateMaterialRequest;
 import ext.vnua.veterinary_beapp.modules.material.dto.request.material.GetMaterialRequest;
 import ext.vnua.veterinary_beapp.modules.material.dto.request.material.UpdateMaterialRequest;
-import ext.vnua.veterinary_beapp.modules.material.enums.MaterialType;
 import ext.vnua.veterinary_beapp.modules.material.mapper.MaterialMapper;
 import ext.vnua.veterinary_beapp.modules.material.model.Material;
 import ext.vnua.veterinary_beapp.modules.material.service.MaterialService;
@@ -46,31 +45,10 @@ public class MaterialController {
         );
     }
 
-    @GetMapping("/{id}")
-    @ApiOperation(value = "Lấy material theo id")
-    public ResponseEntity<?> getMaterialById(@PathVariable Long id) {
-        MaterialDto materialDto = materialService.selectMaterialById(id);
-        return ResponseEntity.ok(materialDto);
-    }
-
-    @GetMapping("/code/{materialCode}")
-    @ApiOperation(value = "Lấy vật liệu theo code")
-    public ResponseEntity<?> getMaterialByCode(@PathVariable String materialCode) {
-        MaterialDto materialDto = materialService.selectMaterialByCode(materialCode);
-        return ResponseEntity.ok(materialDto);
-    }
-
     @GetMapping("/active")
     @ApiOperation(value = "Lấy tất cả materials đang hoạt động")
     public ResponseEntity<?> getAllActiveMaterials() {
         List<MaterialDto> materialDtos = materialService.getActiveMaterials();
-        return ResponseEntity.ok(materialDtos);
-    }
-
-    @GetMapping("/supplier/{supplierId}")
-    @ApiOperation(value = "Lấy materials theo nhà cung cấp")
-    public ResponseEntity<?> getMaterialsBySupplier(@PathVariable Long supplierId) {
-        List<MaterialDto> materialDtos = materialService.selectMaterialsBySupplier(supplierId);
         return ResponseEntity.ok(materialDtos);
     }
 
@@ -86,6 +64,50 @@ public class MaterialController {
     public ResponseEntity<?> getMaterialsRequiringColdStorage() {
         List<MaterialDto> materialDtos = materialService.getMaterialsRequiringColdStorage();
         return ResponseEntity.ok(materialDtos);
+    }
+
+    @GetMapping("/types")
+    @ApiOperation(value = "Lấy danh sách material form types")
+    public ResponseEntity<?> getMaterialTypes() {
+        // Redirect to MaterialFormTypeController
+        return ResponseEntity.badRequest()
+            .body("Use /material/master/material-form-types endpoint instead");
+    }
+
+    @GetMapping("/categories")
+    @ApiOperation(value = "Lấy danh sách material categories")
+    public ResponseEntity<?> getMaterialCategories() {
+        // Redirect to MaterialCategoryController  
+        return ResponseEntity.badRequest()
+            .body("Use /material/master/material-categories endpoint instead");
+    }
+
+    @GetMapping("/code/{materialCode}")
+    @ApiOperation(value = "Lấy vật liệu theo code")
+    public ResponseEntity<?> getMaterialByCode(@PathVariable String materialCode) {
+        MaterialDto materialDto = materialService.selectMaterialByCode(materialCode);
+        return ResponseEntity.ok(materialDto);
+    }
+
+    @GetMapping("/supplier/{supplierId}")
+    @ApiOperation(value = "Lấy materials theo nhà cung cấp")
+    public ResponseEntity<?> getMaterialsBySupplier(@PathVariable Long supplierId) {
+        List<MaterialDto> materialDtos = materialService.selectMaterialsBySupplier(supplierId);
+        return ResponseEntity.ok(materialDtos);
+    }
+
+    @GetMapping("/{id}")
+    @ApiOperation(value = "Lấy material theo id")
+    public ResponseEntity<?> getMaterialById(@PathVariable Long id) {
+        MaterialDto materialDto = materialService.selectMaterialById(id);
+        return ResponseEntity.ok(materialDto);
+    }
+
+    @GetMapping("/{id}/active-ingredients")
+    @ApiOperation(value = "Lấy danh sách hoạt chất của material")
+    public ResponseEntity<?> getMaterialActiveIngredients(@PathVariable Long id) {
+        List<?> activeIngredients = materialService.getMaterialActiveIngredients(id);
+        return BaseResponse.successListData(activeIngredients, activeIngredients.size());
     }
 
     @PostMapping
@@ -145,20 +167,5 @@ public class MaterialController {
     public ResponseEntity<?> recomputeStock(@PathVariable Long id) {
         materialService.syncMaterialStock(id);
         return ResponseEntity.ok("Đã đồng bộ tồn kho từ các lô");
-    }
-
-
-    @GetMapping("/types")
-    public ResponseEntity<List<EnumItem>> listMaterialTypes() {
-        List<EnumItem> items = Arrays.stream(MaterialType.values())
-                .map(t -> new EnumItem(t.name(), t.getDisplayName()))
-                .toList();
-        return ResponseEntity.ok(items);
-    }
-    @Data
-    @AllArgsConstructor
-    public static class EnumItem {
-        private String code;        // VD: "HOAT_CHAT"
-        private String displayName; // VD: "Hoạt chất"
     }
 }

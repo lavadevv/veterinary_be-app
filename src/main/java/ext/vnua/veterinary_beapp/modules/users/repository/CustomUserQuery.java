@@ -5,6 +5,7 @@ import ext.vnua.veterinary_beapp.common.CriteriaBuilderUtil;
 import ext.vnua.veterinary_beapp.modules.users.model.Role;
 import ext.vnua.veterinary_beapp.modules.users.model.User;
 import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -27,31 +28,42 @@ public class CustomUserQuery {
     }
 
     public static Specification<User> getFilterUser(UserFilterParam param) {
-        return (((root, query, criteriaBuilder) -> {
+        return (root, query, cb) -> {
+            // === FETCH JOIN để tránh LazyInitializationException (chỉ áp dụng khi KHÔNG phải count) ===
+            // Hibernate 6/Spring Data: query.getResultType() == Long.class cho count
+            if (query.getResultType() != Long.class) {
+                // fetch các quan hệ cần cho mapping DTO (name/id)
+                root.fetch("department", JoinType.LEFT);
+                root.fetch("position", JoinType.LEFT);
+                root.fetch("role", JoinType.LEFT);
+                query.distinct(true);
+            }
+
             List<Predicate> predicates = new ArrayList<>();
             if (param.keywords != null) {
-                predicates.add(CriteriaBuilderUtil.createPredicateForSearchInsensitive(root, criteriaBuilder,
-                        param.keywords, "fullName"));
+                predicates.add(CriteriaBuilderUtil.createPredicateForSearchInsensitive(
+                        root, cb, param.keywords, "fullName"));
             }
             if (param.block != null) {
-                predicates.add(criteriaBuilder.equal(root.get("block"), param.block));
+                predicates.add(cb.equal(root.get("block"), param.block));
             }
-            if (param.roleId!=null) {
+            if (param.roleId != null) {
                 Join<User, Role> userJoin = root.join("role");
-                predicates.add(criteriaBuilder.equal(userJoin.get("id"), (param.roleId)));
+                predicates.add(cb.equal(userJoin.get("id"), (param.roleId)));
             }
+
+            // Sort
             if (param.sortField != null && !param.sortField.equals("")) {
-                if (param.sortType.equals(Constant.SortType.DESC) || param.sortType.equals("")) {
-                    query.orderBy(criteriaBuilder.desc(root.get(param.sortField)));
-                }
-                if (param.sortType.equals(Constant.SortType.ASC)) {
-                    query.orderBy(criteriaBuilder.asc(root.get(param.sortField)));
+                if (param.sortType == null || param.sortType.equals("") || Constant.SortType.DESC.equals(param.sortType)) {
+                    query.orderBy(cb.desc(root.get(param.sortField)));
+                } else if (Constant.SortType.ASC.equals(param.sortType)) {
+                    query.orderBy(cb.asc(root.get(param.sortField)));
                 }
             } else {
-                query.orderBy(criteriaBuilder.desc(root.get("id")));
+                query.orderBy(cb.desc(root.get("id")));
             }
-            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
-        }));
-    }
 
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+    }
 }

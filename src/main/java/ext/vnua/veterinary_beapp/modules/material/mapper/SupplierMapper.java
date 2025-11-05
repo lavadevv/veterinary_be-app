@@ -14,19 +14,27 @@ import org.mapstruct.factory.Mappers;
 public interface SupplierMapper {
     SupplierMapper INSTANCE = Mappers.getMapper(SupplierMapper.class);
 
+    @Mapping(target = "manufacturerId", expression =
+            "java(supplier.getManufacturer()!=null && org.hibernate.Hibernate.isInitialized(supplier.getManufacturer()) ? supplier.getManufacturer().getId() : null)")
+    @Mapping(target = "manufacturerName", expression =
+            "java(supplier.getManufacturer()!=null && org.hibernate.Hibernate.isInitialized(supplier.getManufacturer()) ? supplier.getManufacturer().getManufacturerName() : null)")
     SupplierDto toSupplierDto(Supplier supplier);
+
     Supplier toSupplier(SupplierDto supplierDto);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "materials", ignore = true)
     @Mapping(target = "isActive", ignore = true) // Will be set to true by default in service
+    @Mapping(target = "manufacturer", ignore = true)
     Supplier toCreateSupplier(CreateSupplierRequest request);
 
     @Mapping(target = "materials", ignore = true)
+    @Mapping(target = "manufacturer", ignore = true)
     Supplier toUpdateSupplier(UpdateSupplierRequest request);
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "materials", ignore = true)
+    @Mapping(target = "manufacturer", ignore = true)
     void updateSupplierFromRequest(UpdateSupplierRequest request, @MappingTarget Supplier supplier);
 
     @AfterMapping

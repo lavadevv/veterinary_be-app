@@ -25,23 +25,22 @@ public class UpdateProductRequest {
     @NotNull(message = "Dạng bào chế không được để trống")
     private FormulationType formulationType;
 
-    @NotBlank(message = "Quy cách đóng gói không được để trống")
-    private String packagingSpecification;
-
-    private String brandName;
-    private String qualityStandard;
-    private String registrationNumber;
-    private String circulationCode;
+    // ❌ REMOVED: packagingSpecification, brandName - Moved to ProductBrand
+    // ❌ REMOVED: qualityStandard, registrationNumber, circulationCode - Moved to ProductBrand
+    
     private Integer shelfLifeMonths;
 
     @NotBlank(message = "Đơn vị tính không được để trống")
     private String unitOfMeasure;
 
+    // READ-ONLY: currentStock should not be updated directly
+    // Use inventory transaction APIs instead
     private Double currentStock;
+    
     private Double minimumStockLevel;
-    private Double costPrice;
-    private Double profitMarginPercentage;
-    private Double sellingPrice;
+    
+    // ❌ REMOVED: costPrice, profitMarginPercentage, sellingPrice - Moved to ProductBrand
+    
     private Boolean requiresColdStorage;
     private String specialStorageConditions;
     private Boolean isActive;

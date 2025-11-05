@@ -24,4 +24,6 @@ public interface ProductFormulaService {
 
     /** Lấy chi tiết theo ID cho màn list toàn cục click vào */
     ProductFormulaDto getById(Long formulaId);
+
+    List<ProductFormulaDto> getCatalogLatest(String q, Long productId, int start, int limit);
 }

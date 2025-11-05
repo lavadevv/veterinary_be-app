@@ -17,7 +17,7 @@ public interface WarehouseRepository extends JpaRepository<Warehouse,Long>, JpaS
     List<Warehouse> findByIsActiveTrue();
 
     // Find by warehouse type and active status
-    List<Warehouse> findByWarehouseTypeAndIsActiveTrue(String warehouseType);
+    List<Warehouse> findByWarehouseTypeIdAndIsActiveTrue(Long warehouseTypeId);
 
     // Check duplicate warehouse code (excluding current ID for update)
     Optional<Warehouse> findByWarehouseCodeAndIdNot(String warehouseCode, Long id);

@@ -5,7 +5,7 @@ import lombok.Data;
 @Data
 public class LocationDto {
     private Long id;
-    private WarehouseDto warehouseDto;
+    private Long warehouseId;
     private String locationCode;
     private String shelf;
     private String floor;
@@ -33,7 +33,7 @@ public class LocationDto {
                 maxCapacity != null ? maxCapacity : 0.0,
                 currentCapacity != null ? currentCapacity : 0.0,
                 Boolean.TRUE.equals(isAvailable) ? "Còn trống" : "Đã đầy/không khả dụng",
-                warehouseDto != null ? warehouseDto.getWarehouseName() : "Không rõ"
+                warehouseId != null ? warehouseId : "Không rõ"
         );
     }
 

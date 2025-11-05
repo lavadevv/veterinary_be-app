@@ -27,11 +27,10 @@ public class Supplier extends AuditableEntity {
     @Column(name = "supplier_name", nullable = false)
     private String supplierName;
 
-    @Column(name = "manufacturer_name")
-    private String manufacturerName;
-
-    @Column(name = "distributor_name")
-    private String distributorName;
+    @ManyToOne(fetch = FetchType.LAZY, optional = true)
+    @JoinColumn(name = "manufacturer_id",
+            foreignKey = @ForeignKey(name = "fk_suppliers_manufacturer"))
+    private Manufacturer manufacturer;
 
     @Column(name = "address", columnDefinition = "TEXT")
     private String address;
@@ -73,8 +72,10 @@ public class Supplier extends AuditableEntity {
         sb.append("\n=== THÔNG TIN NHÀ CUNG CẤP ===\n");
         sb.append("Mã NCC              : ").append(supplierCode).append("\n");
         sb.append("Tên NCC             : ").append(supplierName).append("\n");
-        if (manufacturerName != null) sb.append("Tên nhà sản xuất    : ").append(manufacturerName).append("\n");
-        if (distributorName != null) sb.append("Tên nhà phân phối   : ").append(distributorName).append("\n");
+        if (manufacturer != null) {
+            sb.append("NSX           : ").append(manufacturer.getManufacturerName())
+                    .append(" (").append(manufacturer.getManufacturerCode()).append(")\n");
+        }
         if (address != null) sb.append("Địa chỉ             : ").append(address).append("\n");
         if (registrationNumber != null) sb.append("Số đăng ký          : ").append(registrationNumber).append("\n");
         if (phone != null) sb.append("Số điện thoại       : ").append(phone).append("\n");

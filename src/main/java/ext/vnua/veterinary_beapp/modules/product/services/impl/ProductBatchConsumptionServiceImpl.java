@@ -38,51 +38,30 @@ public class ProductBatchConsumptionServiceImpl implements ProductBatchConsumpti
     @Transactional
     @Auditable(action = AuditAction.CREATE, entityName = "ProductBatchConsumption", description = "Tạo mới Consumption cho ProductBatch")
     public void reserveConsumption(Long batchId, Long materialBatchId, BigDecimal plannedQty) {
-        ProductBatch batch = batchRepo.findById(batchId)
-                .orElseThrow(() -> new DataExistException("Batch không tồn tại"));
-        MaterialBatch mb = materialRepo.findById(materialBatchId)
-                .orElseThrow(() -> new DataExistException("MaterialBatch không tồn tại"));
-
-        if (mb.getAvailableQuantity().compareTo(plannedQty) < 0) {
-            throw new IllegalStateException("Không đủ NVL để reserve");
-        }
-
-        // Trừ available, tăng reserved
-        mb.setAvailableQuantity(mb.getAvailableQuantity().subtract(plannedQty));
-        mb.setReservedQuantity(mb.getReservedQuantity().add(plannedQty));
-        materialRepo.save(mb);
-
-        // Ghi consumption
-        ProductBatchConsumption c = new ProductBatchConsumption();
-        c.setProductBatch(batch);
-        c.setMaterialBatch(mb);
-        c.setPlannedQuantity(plannedQty);
-        c.setActualQuantity(BigDecimal.ZERO);
-        repo.save(c);
+        // TODO: Refactor to work with MaterialBatchItem instead of MaterialBatch
+        // MaterialBatch is now just a container, actual inventory is in MaterialBatchItem
+        // Need to:
+        // 1. Accept materialBatchItemId instead of materialBatchId
+        // 2. Query MaterialBatchItem and check availableQuantity
+        // 3. Update MaterialBatchItem.reservedQuantity and availableQuantity
+        // 4. Link ProductBatchConsumption to MaterialBatchItem
+        throw new UnsupportedOperationException(
+                "This method needs refactoring to work with MaterialBatchItem. " +
+                "Quantities (available, reserved, current) are now tracked per MaterialBatchItem, not MaterialBatch.");
     }
 
     @Override
     @Transactional
     @Auditable(action = AuditAction.UPDATE, entityName = "ProductBatchConsumption", description = "Hoàn tất Consumption cho ProductBatch")
     public void completeConsumption(Long batchId) {
-        List<ProductBatchConsumption> list = repo.findByProductBatchId(batchId);
-        for (ProductBatchConsumption c : list) {
-            MaterialBatch mb = c.getMaterialBatch();
-
-            // Khi complete: trừ reserved → actual
-            BigDecimal planned = c.getPlannedQuantity();
-            BigDecimal actual = planned; // mặc định dùng = planned, sau có thể cho nhập số actual riêng
-
-            if (mb.getReservedQuantity().compareTo(actual) < 0) {
-                throw new IllegalStateException("Reserved NVL không đủ để deduct");
-            }
-
-            mb.setReservedQuantity(mb.getReservedQuantity().subtract(actual));
-            mb.setCurrentQuantity(mb.getCurrentQuantity().subtract(actual));
-            materialRepo.save(mb);
-
-            c.setActualQuantity(actual);
-            repo.save(c);
-        }
+        // TODO: Refactor to work with MaterialBatchItem instead of MaterialBatch
+        // Need to:
+        // 1. Get MaterialBatchItem from each ProductBatchConsumption
+        // 2. Update MaterialBatchItem.reservedQuantity and currentQuantity
+        // 3. Use MaterialBatchItem.reserve() and MaterialBatchItem.updateQuantity() methods
+        throw new UnsupportedOperationException(
+                "This method needs refactoring to work with MaterialBatchItem. " +
+                "ProductBatchConsumption now references MaterialBatchItem, not MaterialBatch. " +
+                "Use item.reserve() and item.updateQuantity() methods.");
     }
 }

@@ -107,7 +107,7 @@ public class ProductionCostSheetServiceImpl implements ProductionCostSheetServic
         e.setTotalAmount(java.math.BigDecimal.ZERO);
         e.setUnitCost(java.math.BigDecimal.ZERO);
 
-        List<ProductionCostItem> items = new ArrayList<>();
+        // Don't replace the collection - add to existing one (already cleared in update method)
         if (r.getItems()!=null) {
             for (UpsertProductionCostSheetRequest.Item it : r.getItems()) {
                 ProductionCostItem d = new ProductionCostItem();
@@ -121,11 +121,10 @@ public class ProductionCostSheetServiceImpl implements ProductionCostSheetServic
 
                 d.setUnitPrice(java.math.BigDecimal.ZERO);
                 d.setAmount(java.math.BigDecimal.ZERO);
-                items.add(d);
+                e.getItems().add(d);
             }
         }
-        e.setItems(items);
-        // totals sẽ tính ở toDto() theo “giá động”
+        // totals sẽ tính ở toDto() theo "giá động"
         return e;
     }
 
@@ -161,7 +160,9 @@ public class ProductionCostSheetServiceImpl implements ProductionCostSheetServic
                             .orElseThrow(() -> new DataExistException("Không thấy NVL: " + x.getMaterialId()));
                     i.setCostCode(m.getMaterialCode());
                     i.setCostName(m.getMaterialName());
-                    i.setUnitOfMeasure(m.getUnitOfMeasure());
+                    var uom = m.getUnitOfMeasure();
+                    String  uomName = uom != null ? uom.getName() : "N/A";
+                    i.setUnitOfMeasure(uomName);
                     unitPrice = m.getFixedPrice()==null ? BigDecimal.ZERO : m.getFixedPrice();
                 }
                 case LABOR -> {
@@ -169,7 +170,9 @@ public class ProductionCostSheetServiceImpl implements ProductionCostSheetServic
                             .orElseThrow(() -> new DataExistException("Không thấy nhân công: " + x.getLaborRateId()));
                     i.setCostCode(l.getCode());
                     i.setCostName(l.getName());
-                    i.setUnitOfMeasure("giờ");
+                    // Get unit from UnitOfMeasure
+                    String laborUomName = (l.getUnitOfMeasure() != null) ? l.getUnitOfMeasure().getName() : "giờ";
+                    i.setUnitOfMeasure(laborUomName);
                     unitPrice = l.getPricePerUnit();
                 }
                 case ENERGY -> {
@@ -177,7 +180,9 @@ public class ProductionCostSheetServiceImpl implements ProductionCostSheetServic
                             .orElseThrow(() -> new DataExistException("Không thấy biểu giá điện: " + x.getEnergyTariffId()));
                     i.setCostCode(t.getCode());
                     i.setCostName(t.getName());
-                    i.setUnitOfMeasure(t.getUnit()); // mặc định kWh
+                    // Get unit from UnitOfMeasure
+                    String energyUomName = (t.getUnitOfMeasure() != null) ? t.getUnitOfMeasure().getName() : "kWh";
+                    i.setUnitOfMeasure(energyUomName);
                     unitPrice = t.getPricePerUnit();
                 }
                 default -> unitPrice = BigDecimal.ZERO;

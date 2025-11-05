@@ -20,6 +20,7 @@ public interface MaterialService {
     MaterialDto selectMaterialById(Long id);
     MaterialDto selectMaterialByCode(String materialCode);
     List<MaterialDto> selectMaterialsBySupplier(Long supplierId);
+    List<?> getMaterialActiveIngredients(Long materialId);
 
     MaterialDto createMaterial(CreateMaterialRequest request);
     MaterialDto updateMaterial(UpdateMaterialRequest request);

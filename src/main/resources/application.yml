@@ -24,18 +24,44 @@ spring:
   mail:
     host: ${MAIL_HOST}
     port: ${MAIL_PORT}
-    username: ${MAIL_USERNAME}
-    password: ${MAIL_PASSWORD}
+    username: lamubboy@gmail.com
+    password: qkoy ffal vyxu nyol
     properties:
       mail.smtp.auth: true
       mail.smtp.starttls.enable: true
 jwt:
   key: ${JWT_KEY}
+  # Access token expiration in seconds (15 minutes)
+  expiration: 900
+  # Refresh token expiration in seconds (7 days)
+  refresh-token-expiration: 604800
+
+security:
+  # Maximum login attempts before account lock
+  max-login-attempts: 5
+  # Login attempt window in seconds (15 minutes)
+  login-attempt-window: 900
+  # Account lock duration in seconds (30 minutes)
+  account-lock-duration: 1800
+  # Maximum IP attempts before blocking
+  max-ip-attempts: 10
+  # IP attempt window in seconds (15 minutes)
+  ip-attempt-window: 900
+  # Password history size (check last N passwords)
+  password-history-size: 3
+  # OTP verify timeout in seconds (10 minutes)
+  otp-verify-ttl: 600
+  # OTP reset password timeout in seconds (10 minutes)
+  otp-reset-ttl: 600
+  # Minimum interval between OTP requests in seconds (30 seconds)
+  otp-regen-min-interval: 30
+
 idea:
   max:
     intellisense:
       filesize: 2500
 FRONTEND_URL: ${FRONTEND_URL}
+DEFAULT-PASSWORD: daeyong123@
 #PAYOS_CLIENT_ID: ${PAYOS_CLIENT_ID}
 #PAYOS_API_KEY: ${PAYOS_API_KEY}
 #PAYOS_CHECKSUM_KEY: ${PAYOS_CHECKSUM_KEY}

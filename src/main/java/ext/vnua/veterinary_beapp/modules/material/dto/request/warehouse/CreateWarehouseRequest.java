@@ -1,6 +1,7 @@
 package ext.vnua.veterinary_beapp.modules.material.dto.request.warehouse;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 
@@ -15,8 +16,8 @@ public class CreateWarehouseRequest {
     @Size(max = 255, message = "Tên kho không được vượt quá 255 ký tự")
     private String warehouseName;
 
-    @Size(max = 100, message = "Loại kho không được vượt quá 100 ký tự")
-    private String warehouseType;
+    @NotNull(message = "Loại kho không được để trống")
+    private Long warehouseTypeId;
 
     private String address;
 

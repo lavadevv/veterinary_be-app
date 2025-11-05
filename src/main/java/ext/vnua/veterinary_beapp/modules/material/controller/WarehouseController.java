@@ -31,12 +31,11 @@ public class WarehouseController {
     @GetMapping
     @ApiOperation(value = "Lấy tất cả nhà kho")
     public ResponseEntity<?> getAllWarehouses(@Valid @ModelAttribute GetWarehouseRequest request) {
-
         Page<Warehouse> page = warehouseService.getAllWarehouse(request, PageRequest.of(request.getStart(), request.getLimit()));
-
-        return BaseResponse.successListData(page.getContent().stream()
-                .map(warehouseMapper::toWarehouseDto)
-                .collect(Collectors.toList()), (int) page.getTotalElements());
+        return BaseResponse.successListData(
+                page.getContent().stream().map(warehouseMapper::toWarehouseDto).collect(Collectors.toList()),
+                (int) page.getTotalElements()
+        );
     }
 
     @GetMapping("/all")
@@ -49,46 +48,38 @@ public class WarehouseController {
     @GetMapping("/{id}")
     @ApiOperation(value = "Lấy warehouse theo id")
     public ResponseEntity<?> getWarehouseById(@PathVariable Long id) {
-        WarehouseDto warehouseDto = warehouseService.selectWarehouseById(id);
-        return ResponseEntity.ok(warehouseDto);
+        return ResponseEntity.ok(warehouseService.selectWarehouseById(id));
     }
 
     @GetMapping("/code/{warehouseCode}")
     @ApiOperation(value = "Lấy nhà kho theo code")
     public ResponseEntity<?> getWarehouseByCode(@PathVariable String warehouseCode) {
-        WarehouseDto warehouseDto = warehouseService.selectWarehouseByCode(warehouseCode);
-        return ResponseEntity.ok(warehouseDto);
+        return ResponseEntity.ok(warehouseService.selectWarehouseByCode(warehouseCode));
     }
 
     @GetMapping("/active")
     @ApiOperation(value = "Lấy tất cả warehouses đang hoạt động")
     public ResponseEntity<?> getAllActiveWarehouses() {
-        List<WarehouseDto> warehouseDtos = warehouseService.selectAllActiveWarehouses();
-        return ResponseEntity.ok(warehouseDtos);
+        return ResponseEntity.ok(warehouseService.selectAllActiveWarehouses());
     }
 
-    @GetMapping("/type/{warehouseType}")
-    @ApiOperation(value = "Get warehouses by type")
-    public ResponseEntity<?> getWarehousesByType(@PathVariable String warehouseType) {
-        List<WarehouseDto> warehouseDtos = warehouseService.getWarehousesByType(warehouseType);
-        return ResponseEntity.ok(warehouseDtos);
+    @GetMapping("/type/{typeId}")
+    @ApiOperation(value = "Get warehouses by type id")
+    public ResponseEntity<?> getWarehousesByType(@PathVariable("typeId") Long typeId) {
+        return ResponseEntity.ok(warehouseService.getWarehousesByTypeId(typeId));
     }
 
     @PostMapping
     @ApiOperation(value = "Tạo mới warehouse")
-    public ResponseEntity<?> createWarehouse(
-            @Valid @RequestBody CreateWarehouseRequest request) {
-        WarehouseDto warehouseDto = warehouseService.createWarehouse(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(warehouseDto);
+    public ResponseEntity<?> createWarehouse(@Valid @RequestBody CreateWarehouseRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(warehouseService.createWarehouse(request));
     }
 
     @PutMapping("/{id}")
     @ApiOperation(value = "Cập nhật warehouse")
-    public ResponseEntity<?> updateWarehouse(@PathVariable Long id,
-            @Valid @RequestBody UpdateWarehouseRequest request) {
+    public ResponseEntity<?> updateWarehouse(@PathVariable Long id, @Valid @RequestBody UpdateWarehouseRequest request) {
         request.setId(id);
-        WarehouseDto warehouseDto = warehouseService.updateWarehouse(request);
-        return ResponseEntity.ok(warehouseDto);
+        return ResponseEntity.ok(warehouseService.updateWarehouse(request));
     }
 
     @DeleteMapping("/{id}")
@@ -100,10 +91,8 @@ public class WarehouseController {
 
     @DeleteMapping("/batch")
     @ApiOperation(value = "Xoá nhiều warehouses")
-    public ResponseEntity<?> deleteWarehouses(
-            @RequestBody List<Long> ids) {
-        List<WarehouseDto> deletedWarehouses = warehouseService.deleteAllIdWarehouses(ids);
-        return ResponseEntity.ok(deletedWarehouses);
+    public ResponseEntity<?> deleteWarehouses(@RequestBody List<Long> ids) {
+        return ResponseEntity.ok(warehouseService.deleteAllIdWarehouses(ids));
     }
 
     @PatchMapping("/{id}/toggle-status")
@@ -112,5 +101,4 @@ public class WarehouseController {
         warehouseService.toggleActiveStatus(id);
         return ResponseEntity.ok("Đã thay đổi trạng thái kho");
     }
-
 }

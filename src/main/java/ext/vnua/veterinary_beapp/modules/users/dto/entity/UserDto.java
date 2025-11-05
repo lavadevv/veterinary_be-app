@@ -1,8 +1,6 @@
 package ext.vnua.veterinary_beapp.modules.users.dto.entity;
 
-import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
-
 import java.time.LocalDateTime;
 
 @Data
@@ -25,9 +23,9 @@ public class UserDto {
 
     private RoleDto role;
 
-    private String department;
-
-    private String position;
+    // chỉ trả về ID để FE tự resolve name từ org store
+    private Long departmentId;
+    private Long positionId;
 
     private LocalDateTime createdDate;
 
@@ -41,9 +39,8 @@ public class UserDto {
                 ", email='" + email + '\'' +
                 ", block=" + block +
                 ", role=" + (role != null ? role.getName() : "null") +
-                ", department='" + department + '\'' +
-                ", position='" + position + '\'' +
+                ", departmentId=" + departmentId +
+                ", positionId=" + positionId +
                 '}';
     }
-
 }

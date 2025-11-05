@@ -9,6 +9,7 @@ import ext.vnua.veterinary_beapp.modules.material.dto.request.supplier.CreateSup
 import ext.vnua.veterinary_beapp.modules.material.dto.request.supplier.UpdateSupplierRequest;
 import ext.vnua.veterinary_beapp.modules.material.mapper.SupplierMapper;
 import ext.vnua.veterinary_beapp.modules.material.model.Supplier;
+import ext.vnua.veterinary_beapp.modules.material.repository.ManufacturerRepository;
 import ext.vnua.veterinary_beapp.modules.material.repository.SupplierRepository;
 import ext.vnua.veterinary_beapp.modules.material.repository.custom.CustomSupplierQuery;
 import ext.vnua.veterinary_beapp.modules.material.service.SupplierService;
@@ -29,6 +30,7 @@ import java.util.Optional;
 public class SupplierServiceImpl implements SupplierService {
     private final SupplierRepository supplierRepository;
     private final SupplierMapper supplierMapper;
+    private final ManufacturerRepository manufacturerRepository;
 
     @Override
     public Page<Supplier> getAllSupplier(CustomSupplierQuery.SupplierFilterParam param, PageRequest pageRequest) {
@@ -100,6 +102,15 @@ public class SupplierServiceImpl implements SupplierService {
             Supplier supplier = supplierMapper.toCreateSupplier(request);
             supplier.setIsActive(true);
 
+            if (request.getManufacturerId() != null) {
+                var mf = manufacturerRepository.findById(request.getManufacturerId())
+                        .orElseThrow(() -> new MyCustomException("Manufacturer không tồn tại"));
+                supplier.setManufacturer(mf);
+            } else {
+                supplier.setManufacturer(null);
+            }
+
+
             return supplierMapper.toSupplierDto(supplierRepository.saveAndFlush(supplier));
         } catch (Exception e) {
             throw new MyCustomException("Có lỗi xảy ra trong quá trình thêm nhà cung cấp");
@@ -151,6 +162,15 @@ public class SupplierServiceImpl implements SupplierService {
 
         try {
             supplierMapper.updateSupplierFromRequest(request, existingSupplier);
+
+            if (request.getManufacturerId() != null) {
+                var mf = manufacturerRepository.findById(request.getManufacturerId())
+                        .orElseThrow(() -> new MyCustomException("Manufacturer không tồn tại"));
+                existingSupplier.setManufacturer(mf);
+            } else {
+                existingSupplier.setManufacturer(null);
+            }
+
             return supplierMapper.toSupplierDto(supplierRepository.saveAndFlush(existingSupplier));
         } catch (Exception e) {
             throw new MyCustomException("Có lỗi xảy ra trong quá trình cập nhật nhà cung cấp");

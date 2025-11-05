@@ -2,6 +2,7 @@ package ext.vnua.veterinary_beapp.modules.users.dto.request;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.*;
 
 @Data
@@ -17,8 +18,4 @@ public class UpdateProfileRequest {
     private String address;
     @NotBlank(message = "Số điện thoại không được để trống")
     private String phone;
-    @NotBlank(message = "Phòng ban không được để trống")
-    private String department;
-    @NotBlank(message = "Chức vụ không được để trống")
-    private String position;
 }

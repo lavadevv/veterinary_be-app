@@ -16,11 +16,8 @@ public class CreateSupplierRequest {
     @Size(max = 255, message = "Tên nhà cung cấp không được vượt quá 255 ký tự")
     private String supplierName;
 
-    @Size(max = 255, message = "Tên nhà sản xuất không được vượt quá 255 ký tự")
-    private String manufacturerName;
-
-    @Size(max = 255, message = "Tên nhà phân phối không được vượt quá 255 ký tự")
-    private String distributorName;
+    // MỚI
+    private Long manufacturerId;
 
     private String address;
 

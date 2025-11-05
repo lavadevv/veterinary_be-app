@@ -1,6 +1,10 @@
 package ext.vnua.veterinary_beapp.modules.material.repository;
 
 import ext.vnua.veterinary_beapp.modules.material.model.Supplier;
+import io.micrometer.common.lang.Nullable;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
@@ -15,7 +19,15 @@ import java.util.Optional;
 @Repository
 public interface SupplierRepository extends JpaRepository<Supplier, Long>, JpaSpecificationExecutor<Supplier> {
 
-    @EntityGraph(attributePaths = {"materials"})
+    @Override
+    @EntityGraph(attributePaths = {"manufacturer"})
+    Page<Supplier> findAll(@Nullable Specification<Supplier> spec, Pageable pageable);
+
+    @Override
+    @EntityGraph(attributePaths = {"manufacturer"})
+    List<Supplier> findAll(@Nullable Specification<Supplier> spec);
+
+    @EntityGraph(attributePaths = {"materials", "manufacturer"})
     Optional<Supplier> findById(Long id);
 
     // Tìm theo mã nhà cung cấp

@@ -19,8 +19,8 @@ public class UpdateWarehouseRequest {
     @Size(max = 255, message = "Tên kho không được vượt quá 255 ký tự")
     private String warehouseName;
 
-    @Size(max = 100, message = "Loại kho không được vượt quá 100 ký tự")
-    private String warehouseType;
+    @NotNull(message = "Loại kho không được để trống")
+    private Long warehouseTypeId;
 
     private String address;
 

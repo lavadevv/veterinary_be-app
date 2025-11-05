@@ -15,6 +15,7 @@ import ext.vnua.veterinary_beapp.modules.product.dto.response.productBatch.CalcB
 import ext.vnua.veterinary_beapp.modules.product.enums.ProductBatchStatus;
 import ext.vnua.veterinary_beapp.modules.product.mapper.ProductBatchMapper;
 import ext.vnua.veterinary_beapp.modules.product.model.*;
+import ext.vnua.veterinary_beapp.modules.product.repository.FormulaHeaderRepository;
 import ext.vnua.veterinary_beapp.modules.product.repository.ProductBatchConsumptionRepository;
 import ext.vnua.veterinary_beapp.modules.product.repository.ProductBatchRepository;
 import ext.vnua.veterinary_beapp.modules.product.repository.ProductFormulaRepository;
@@ -44,6 +45,8 @@ public class ProductBatchServiceImpl implements ProductBatchService {
     private final MaterialBatchRepository materialBatchRepo;
     private final LocationRepository locationRepo;
     private final ProductBatchConsumptionRepository consumptionRepository;
+    /** NEW: resolve công thức theo productId sau refactor */
+    private final FormulaHeaderRepository headerRepo;
 
     @Override
     public Page<ProductBatch> getAllBatches(CustomProductBatchQuery.ProductBatchFilterParam param, PageRequest pageRequest) {
@@ -92,26 +95,36 @@ public class ProductBatchServiceImpl implements ProductBatchService {
             } else {
                 // Theo % nhưng không ràng buộc 100; dùng tỉ lệ percent / sumPct
                 BigDecimal pct = it.getPercentage();
-                if (pct == null || pct.signum() <= 0) {
-                    // Nếu không có % hoặc <=0 thì coi như 0 (bỏ qua)
-                    continue;
-                }
+                if (pct == null || pct.signum() <= 0) continue;
                 needG = qtyG(plannedQtyKg, pct, sumPct);
             }
 
             needsG.merge(materialId, needG, BigDecimal::add);
         }
         return needsG;
-
     }
 
+    /** NEW: resolve công thức theo Header/Version (không còn findFirstActiveByProductIdWithProduct) */
     private ProductFormula resolveFormula(Long productId, Long formulaId) {
         if (formulaId != null) {
             return formulaRepo.findById(formulaId)
                     .orElseThrow(() -> new DataExistException("Công thức không tồn tại"));
         }
-        return formulaRepo.findFirstActiveByProductIdWithProduct(productId)
-                .orElseThrow(() -> new DataExistException("Sản phẩm chưa có công thức active"));
+        // Lấy headers gắn với productId
+        var headers = headerRepo.searchHeaders(null, productId, PageRequest.of(0, 100)).getContent();
+        if (headers.isEmpty()) throw new DataExistException("Sản phẩm chưa gắn công thức");
+        // Ưu tiên phiên bản active mới nhất
+        for (var h : headers) {
+            var page = formulaRepo.findAllVersions(h.getFormulaCode(), PageRequest.of(0, 20));
+            Optional<ProductFormula> activeLatest = page.stream()
+                    .filter(ProductFormula::getIsActive)
+                    .findFirst();
+            if (activeLatest.isPresent()) return activeLatest.get();
+        }
+        // Fallback: lấy phiên bản mới nhất của header đầu tiên
+        var page = formulaRepo.findAllVersions(headers.get(0).getFormulaCode(), PageRequest.of(0, 1));
+        if (page.isEmpty()) throw new DataExistException("Chưa có phiên bản công thức");
+        return page.getContent().get(0);
     }
 
     @Override
@@ -124,14 +137,14 @@ public class ProductBatchServiceImpl implements ProductBatchService {
             Long materialId = e.getKey();
             BigDecimal need = e.getValue();
 
-            // FIFO (ưu tiên gần hết hạn trước), đã có availableQuantity
-            List<MaterialBatch> fifo = materialBatchRepo.findAvailableByMaterialFifoUsable(
-                    materialId,
-                    ext.vnua.veterinary_beapp.modules.material.enums.TestStatus.DAT,
-                    ext.vnua.veterinary_beapp.modules.material.enums.UsageStatus.SAN_SANG_SU_DUNG,
-                    LocalDate.now()
-            );
+            // TODO: REFACTOR - Repository method no longer exists
+            // MaterialBatch no longer has material, availableQuantity, testStatus, usageStatus, expiryDate
+            // Need to use MaterialBatchItemRepository.findFIFOItemsForAllocation() or findFEFOItemsForAllocation()
+            throw new UnsupportedOperationException(
+                "Auto-pick materials needs complete refactoring for MaterialBatchItem structure. " +
+                "Use MaterialBatchItemRepository.findFIFOItemsForAllocation() to get items for allocation.");
 
+            /* OLD CODE - Deprecated - MaterialBatch no longer has these fields
             BigDecimal remain = need;
             for (MaterialBatch mb : fifo) {
                 if (remain.signum() <= 0) break;
@@ -144,6 +157,7 @@ public class ProductBatchServiceImpl implements ProductBatchService {
             if (remain.signum() > 0) {
                 shortages.add(new Shortage(materialId, remain));
             }
+            */ 
         }
         return new ConsumptionPlan(picks, shortages);
     }
@@ -185,7 +199,7 @@ public class ProductBatchServiceImpl implements ProductBatchService {
             throw new MyCustomException("Thiếu NVL cho lệnh sản xuất " + plan.shortages());
         }
 
-        // 3) Reserve NVL + ghi consumption planned theo từng MaterialBatch
+        // 3) Reserve NVL + ghi consumption planned
         reserveMaterials(batch.getId(), plan.picks());
 
         return batchMapper.toDto(batch);
@@ -211,7 +225,24 @@ public class ProductBatchServiceImpl implements ProductBatchService {
         for (MaterialPick p : picks) {
             MaterialBatch mb = materialBatchRepo.findById(p.materialBatchId())
                     .orElseThrow(() -> new DataExistException("NVL không tồn tại: " + p.materialBatchId()));
-            pickedTotals.merge(mb.getMaterial().getId(), p.quantity(), BigDecimal::add);
+            
+            // TODO: REFACTOR NEEDED - MaterialBatch now contains multiple MaterialBatchItems
+            // This logic assumes one material per batch, which is no longer valid
+            // Should use MaterialBatchItem ID instead of MaterialBatch ID
+            if (mb.getBatchItems() == null || mb.getBatchItems().isEmpty()) {
+                throw new MyCustomException("Lô vật liệu không có items (cấu trúc mới)");
+            }
+            
+            // Temporary workaround: if batch has only one item, use that material
+            if (mb.getBatchItems().size() == 1) {
+                var item = mb.getBatchItems().get(0);
+                if (item.getMaterial() != null) {
+                    pickedTotals.merge(item.getMaterial().getId(), p.quantity(), BigDecimal::add);
+                }
+            } else {
+                throw new MyCustomException(
+                    "Lô có nhiều vật liệu - cần refactor logic để dùng MaterialBatchItem ID");
+            }
         }
 
         List<Shortage> shortages = new ArrayList<>();
@@ -234,6 +265,14 @@ public class ProductBatchServiceImpl implements ProductBatchService {
             MaterialBatch mb = materialBatchRepo.findById(pick.materialBatchId())
                     .orElseThrow(() -> new DataExistException("NVL không tồn tại: " + pick.materialBatchId()));
 
+            // TODO: REFACTOR - MaterialBatch structure changed
+            // availableQuantity, reservedQuantity are now in MaterialBatchItem
+            // ProductBatchConsumption should reference MaterialBatchItem not MaterialBatch
+            throw new UnsupportedOperationException(
+                "Reserve materials needs complete refactoring for MaterialBatchItem structure. " +
+                "MaterialBatch no longer has quantity fields.");
+            
+            /*
             BigDecimal need = pick.quantity();
             if (need == null || need.signum() <= 0) continue;
 
@@ -249,13 +288,14 @@ public class ProductBatchServiceImpl implements ProductBatchService {
             mb.setReservedQuantity(newReserved);
             materialBatchRepo.saveAndFlush(mb);
 
-            // Ghi consumption planned theo từng lô NVL
+            // Ghi consumption planned
             ProductBatchConsumption c = new ProductBatchConsumption();
             c.setProductBatch(batchRepo.getReferenceById(batchId));
-            c.setMaterialBatch(mb);
+            c.setMaterialBatchItem(batchItem);  // Changed from setMaterialBatch
             c.setPlannedQuantity(need);
             c.setActualQuantity(BigDecimal.ZERO);
             toSave.add(c);
+            */
         }
 
         if (!toSave.isEmpty()) {
@@ -264,7 +304,7 @@ public class ProductBatchServiceImpl implements ProductBatchService {
     }
 
     private String generateBatchNumber(Product product, LocalDate mfgDate) {
-        String prefix = product.getProductCode() + "-" + mfgDate; // PRD001-2025-10-08
+        String prefix = product.getProductCode() + "-" + mfgDate;
         List<String> existed = batchRepo.findBatchNumbersByProductAndDate(product.getId(), mfgDate);
 
         int nextSeq = 1;
@@ -330,44 +370,41 @@ public class ProductBatchServiceImpl implements ProductBatchService {
     private void deductMaterialsForBatch(Long batchId) {
         List<ProductBatchConsumption> consumptions = consumptionRepository.findByProductBatchId(batchId);
 
+        // TODO: REFACTOR - ProductBatchConsumption now uses MaterialBatchItem
+        // All quantity fields (reserved, available, current) are in MaterialBatchItem
+        throw new UnsupportedOperationException(
+            "Material deduction needs complete refactoring for MaterialBatchItem structure. " +
+            "Consumptions should reference MaterialBatchItem not MaterialBatch.");
+        
+        /*
         for (ProductBatchConsumption c : consumptions) {
-            MaterialBatch mb = c.getMaterialBatch();
+            var batchItem = c.getMaterialBatchItem();  // Changed from getMaterialBatch()
 
             // Nếu actual chưa set, mặc định = planned
             BigDecimal actual = (c.getActualQuantity() == null || c.getActualQuantity().signum() == 0)
                     ? c.getPlannedQuantity() : c.getActualQuantity();
 
             // Không cho âm reserved
-            BigDecimal reserved = (mb.getReservedQuantity() == null ? BigDecimal.ZERO : mb.getReservedQuantity());
+            BigDecimal reserved = (batchItem.getReservedQuantity() == null ? BigDecimal.ZERO : batchItem.getReservedQuantity());
             if (reserved.compareTo(actual) < 0) {
-                throw new MyCustomException("Reserved không đủ để trừ cho lô NVL " + mb.getBatchNumber());
+                throw new MyCustomException("Reserved không đủ để trừ cho item NVL " + batchItem.getId());
             }
 
             BigDecimal newReserved = reserved.subtract(actual);
-            BigDecimal newCurrent = mb.getCurrentQuantity().subtract(actual);
+            BigDecimal newCurrent = batchItem.getCurrentQuantity().subtract(actual);
             if (newCurrent.signum() < 0) {
-                throw new MyCustomException("Âm kho NVL cho lô " + mb.getBatchNumber());
+                throw new MyCustomException("Âm kho NVL cho item " + batchItem.getId());
             }
 
-            mb.setReservedQuantity(newReserved);
+            batchItem.setReservedQuantity(newReserved);
             // available = max(current - reserved, 0)
             BigDecimal recomputedAvailable = newCurrent.subtract(newReserved);
             if (recomputedAvailable.signum() < 0) recomputedAvailable = BigDecimal.ZERO;
-            mb.setAvailableQuantity(recomputedAvailable);
-            mb.setCurrentQuantity(newCurrent);
-
-            Location loc = mb.getLocation();
-            updateLocationCapacitySafe(loc, -actual.doubleValue()); // trừ sức chứa theo lượng NVL đã tiêu hao
-
-
-            materialBatchRepo.saveAndFlush(mb);
-
-            // Lưu lại actual (nếu chưa)
-            if (c.getActualQuantity() == null || c.getActualQuantity().signum() == 0) {
-                c.setActualQuantity(actual);
-                consumptionRepository.save(c);
-            }
+            batchItem.setAvailableQuantity(recomputedAvailable);
+            batchItem.setCurrentQuantity(newCurrent);
+            // ... save batchItem
         }
+        */
     }
 
     @Override
@@ -401,6 +438,7 @@ public class ProductBatchServiceImpl implements ProductBatchService {
     }
 
     @Override
+    @Transactional
     public CalcBatchRes calc(CalcBatchReq req) {
         ProductFormula f = formulaRepo.findById(req.formulaId())
                 .orElseThrow(() -> new DataExistException("Không tìm thấy công thức"));
@@ -434,7 +472,7 @@ public class ProductBatchServiceImpl implements ProductBatchService {
                 }
             } else {
                 BigDecimal pct = it.getPercentage();
-                if (pct == null || pct.signum() <= 0) continue; // bỏ dòng % <= 0
+                if (pct == null || pct.signum() <= 0) continue;
                 qg = qtyG(req.batchSizeKg(), pct, sumPct);
             }
 
@@ -449,21 +487,24 @@ public class ProductBatchServiceImpl implements ProductBatchService {
                     m.getMaterialCode(),
                     m.getMaterialName(),
                     "g",
-                    it.getPercentage(), // vẫn trả về % input để hiển thị
+                    it.getPercentage(),
                     qg,
                     pG,
                     amt
             ));
         }
 
+        // NEW: sản phẩm đại diện từ header.products
+        Product rep = pickFirstProduct(f);
+        Long repProductId = rep != null ? rep.getId() : null;
+
         return new CalcBatchRes(
-                f.getProduct().getId(),
+                repProductId,
                 f.getId(),
                 req.batchSizeKg(),
                 lines,
                 new CalcBatchRes.Totals(req.batchSizeKg(), totalAmount)
         );
-
     }
 
     @Override
@@ -475,12 +516,18 @@ public class ProductBatchServiceImpl implements ProductBatchService {
         this.calc(new CalcBatchReq(req.formulaId(), req.batchSizeKg()));
         ProductFormula f = formulaRepo.getReferenceById(req.formulaId());
 
+        // NEW: lấy sản phẩm đại diện từ header.products
+        Product rep = pickFirstProduct(f);
+        if (rep == null) {
+            throw new DataExistException("Công thức chưa gắn với bất kỳ sản phẩm nào");
+        }
+
         ProductBatch b = new ProductBatch();
-        b.setProduct(f.getProduct());
+        b.setProduct(rep);
         b.setFormula(f);
-        b.setBatchNumber(generateBatchNumber(f.getProduct(), mfg));
+        b.setBatchNumber(generateBatchNumber(rep, mfg));
         b.setManufacturingDate(mfg);
-        b.setExpiryDate(calcExpiry(f.getProduct(), mfg));
+        b.setExpiryDate(calcExpiry(rep, mfg));
         b.setPlannedQuantity(req.batchSizeKg()); // kg
         b.setActualQuantity(null);
         b.setYieldPercentage(null);
@@ -499,7 +546,7 @@ public class ProductBatchServiceImpl implements ProductBatchService {
         ProductBatch b = batchRepo.findById(request.getBatchId())
                 .orElseThrow(() -> new DataExistException("Batch không tồn tại"));
 
-        // Idempotent: nếu đã hủy thì thoát sớm
+        // Idempotent
         if (b.getStatus() == ProductBatchStatus.CANCELED) {
             return;
         }
@@ -508,7 +555,7 @@ public class ProductBatchServiceImpl implements ProductBatchService {
             throw new MyCustomException("Chỉ có thể hủy lệnh ở trạng thái DRAFT/IN_PROGRESS");
         }
         if (b.getActualQuantity() != null && b.getActualQuantity().signum() > 0) {
-            throw new MyCustomException("Lô đã ghi nhận thành phẩm, không thể hủy. Hãy dùng quy trình khác (return/adjust).");
+            throw new MyCustomException("Lô đã ghi nhận thành phẩm, không thể hủy.");
         }
 
         List<ProductBatchConsumption> lines = consumptionRepository.findByProductBatchId(b.getId());
@@ -520,18 +567,25 @@ public class ProductBatchServiceImpl implements ProductBatchService {
         }
 
         // Xả reserve nếu còn
+        // TODO: REFACTOR - ProductBatchConsumption uses MaterialBatchItem now
+        throw new UnsupportedOperationException(
+            "Cancel batch needs refactoring for MaterialBatchItem structure.");
+        
+        /*
         for (ProductBatchConsumption c : lines) {
-            MaterialBatch mb = c.getMaterialBatch();
+            var batchItem = c.getMaterialBatchItem();  // Changed from getMaterialBatch()
             BigDecimal planned = nz(c.getPlannedQuantity());
 
-            if (mb.getReservedQuantity() == null) mb.setReservedQuantity(BigDecimal.ZERO);
-            if (mb.getAvailableQuantity() == null) mb.setAvailableQuantity(BigDecimal.ZERO);
+            if (batchItem.getReservedQuantity() == null) batchItem.setReservedQuantity(BigDecimal.ZERO);
+            if (batchItem.getAvailableQuantity() == null) batchItem.setAvailableQuantity(BigDecimal.ZERO);
 
-            mb.setReservedQuantity(mb.getReservedQuantity().subtract(planned));
-            if (mb.getReservedQuantity().signum() < 0) mb.setReservedQuantity(BigDecimal.ZERO);
+            BigDecimal newReserved = batchItem.getReservedQuantity().subtract(planned);
+            if (newReserved.signum() < 0) newReserved = BigDecimal.ZERO;
+            batchItem.setReservedQuantity(newReserved);
 
-            mb.setAvailableQuantity(mb.getAvailableQuantity().add(planned));
-            materialBatchRepo.saveAndFlush(mb);
+            BigDecimal newAvail = batchItem.getAvailableQuantity().add(planned);
+            batchItem.setAvailableQuantity(newAvail);
+            // batchItemRepo.saveAndFlush(batchItem);
         }
 
         if (!lines.isEmpty()) {
@@ -544,15 +598,14 @@ public class ProductBatchServiceImpl implements ProductBatchService {
                 : "Hủy lệnh sản xuất: " + request.getReason();
         b.setNotes((b.getNotes() == null ? "" : b.getNotes() + "\n") + note);
         batchRepo.saveAndFlush(b);
+        */
     }
-
 
     private static BigDecimal nz(BigDecimal v) { return v == null ? BigDecimal.ZERO : v; }
 
-
     private static BigDecimal pricePerG(Material m) {
         if (m.getFixedPrice() == null) throw new DataExistException("Nguyên liệu " + m.getMaterialName() + " chưa có đơn giá");
-        String uom = (m.getUnitOfMeasure() == null ? "g" : m.getUnitOfMeasure()).trim().toLowerCase();
+        String uom = (m.getUnitOfMeasure() == null ? "g" : m.getUnitOfMeasure().getName()).trim().toLowerCase();
         BigDecimal price = m.getFixedPrice();
         return switch (uom) {
             case "kg" -> price.divide(BigDecimal.valueOf(1000), 6, RoundingMode.HALF_UP);
@@ -561,19 +614,10 @@ public class ProductBatchServiceImpl implements ProductBatchService {
         };
     }
 
-//    private static BigDecimal qtyG(BigDecimal batchSizeKg, BigDecimal percent) {
-//        // percent là % thật: 0.3, 20.0,...
-//        return batchSizeKg.multiply(percent)
-//                .divide(BigDecimal.valueOf(100), 9, RoundingMode.HALF_UP)
-//                .multiply(BigDecimal.valueOf(1000)); // kg -> g
-//    }
-
     private static BigDecimal qtyG(BigDecimal batchSizeKg, BigDecimal percent, BigDecimal sumPct) {
-        // Nếu sumPct == 0 (bất thường) → ném lỗi
         if (sumPct == null || sumPct.signum() == 0) {
             throw new DataExistException("Tổng tỷ lệ thành phần bằng 0, không thể tính định mức.");
         }
-        // q(g) = batch(kg) * (percent / sumPct) * 1000
         return batchSizeKg
                 .multiply(percent)
                 .divide(sumPct, 9, RoundingMode.HALF_UP)
@@ -594,4 +638,9 @@ public class ProductBatchServiceImpl implements ProductBatchService {
         locationRepo.saveAndFlush(location);
     }
 
+    /** Lấy sản phẩm đại diện từ header.products */
+    private Product pickFirstProduct(ProductFormula f) {
+        if (f == null || f.getHeader() == null || f.getHeader().getProducts() == null) return null;
+        return f.getHeader().getProducts().stream().findFirst().orElse(null);
+    }
 }

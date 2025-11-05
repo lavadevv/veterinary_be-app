@@ -10,11 +10,18 @@ public interface ProductionOrderMaterialMapper {
     @Mapping(source = "productionOrder.id", target = "productionOrderId")
     @Mapping(source = "productionOrder.orderCode", target = "orderCode")
 
-    @Mapping(source = "materialBatch.id", target = "materialBatchId")
-    @Mapping(source = "materialBatch.batchNumber", target = "materialBatchNumber")
+    // MaterialBatchItem mappings
+    @Mapping(source = "materialBatchItem.id", target = "materialBatchItemId")
+    @Mapping(source = "materialBatchItem.internalItemCode", target = "materialBatchItemCode")
+    
+    // Batch info (parent của item)
+    @Mapping(source = "materialBatchItem.batch.id", target = "materialBatchId")
+    @Mapping(source = "materialBatchItem.batch.batchNumber", target = "materialBatchNumber")
 
-    @Mapping(source = "materialBatch.material.id", target = "materialId")
-    @Mapping(source = "materialBatch.material.materialCode", target = "materialCode")
-    @Mapping(source = "materialBatch.material.materialName", target = "materialName")
+    // Material info
+    @Mapping(source = "materialBatchItem.material.id", target = "materialId")
+    @Mapping(source = "materialBatchItem.material.materialCode", target = "materialCode")
+    @Mapping(source = "materialBatchItem.material.materialName", target = "materialName")
+    
     ProductionOrderMaterialDto toDto(ProductionOrderMaterial entity);
 }

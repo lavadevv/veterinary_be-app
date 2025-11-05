@@ -7,6 +7,7 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 @Data
 public class CreateMaterialBatchRequest {
@@ -48,6 +49,23 @@ public class CreateMaterialBatchRequest {
     @Digits(integer = 12, fraction = 2, message = "Đơn giá không hợp lệ")
     private BigDecimal unitPrice;
 
+    @DecimalMin(value = "0.0", message = "Thuế không được âm")
+    @DecimalMax(value = "100.0", message = "Thuế không được vượt quá 100%")
+    @Digits(integer = 3, fraction = 4, message = "Thuế không hợp lệ")
+    private BigDecimal taxPercent;
+
+    @Min(value = 1, message = "ID nhà cung cấp phải lớn hơn 0")
+    private Long supplierId;
+
+    @Min(value = 1, message = "ID nhà sản xuất phải lớn hơn 0")
+    private Long manufacturerId;
+
+    @Size(max = 100, message = "Xuất xứ không được vượt quá 100 ký tự")
+    private String countryOfOrigin;
+
+    @Size(max = 100, message = "Số hóa đơn nhập không được vượt quá 100 ký tự")
+    private String invoiceNumber;
+
     private TestStatus testStatus;
 
     private UsageStatus usageStatus;
@@ -74,4 +92,23 @@ public class CreateMaterialBatchRequest {
 
     @Size(max = 2000, message = "Ghi chú không được vượt quá 2000 ký tự")
     private String notes;
+
+    // Active ingredients COA/KQPT data
+    private List<ActiveIngredientInput> activeIngredients;
+
+    @Data
+    public static class ActiveIngredientInput {
+        @NotNull(message = "ID hoạt chất không được để trống")
+        private Long activeIngredientId;
+
+        @NotNull(message = "Hàm lượng COA không được để trống")
+        @DecimalMin(value = "0.0", message = "Hàm lượng COA không được âm")
+        private BigDecimal coaContent;
+
+        @DecimalMin(value = "0.0", message = "Hàm lượng thực tế không được âm")
+        private BigDecimal actualContent;
+
+        @Size(max = 500, message = "Ghi chú hoạt chất không được vượt quá 500 ký tự")
+        private String notes;
+    }
 }

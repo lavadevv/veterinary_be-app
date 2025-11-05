@@ -42,32 +42,43 @@ public class MaterialCostVarianceReportServiceImpl implements MaterialCostVarian
 
         List<MaterialCostVarianceResponse.Row> rows = new ArrayList<>();
 
-        // 1) Hàng nhập kho (MaterialBatch)
+        // 1) Hàng nhập kho (MaterialBatch) - Updated for MaterialBatchItem structure
         List<MaterialBatch> batches = materialBatchRepo.findByReceivedDateBetween(from, to);
         for (MaterialBatch mb : batches) {
-            Material m = mb.getMaterial();
-            BigDecimal qty = nvl(mb.getReceivedQuantity());
-            BigDecimal unitPrice = nvl(mb.getUnitPrice()); // giá nhập theo lô
-            BigDecimal formulaPrice = resolveFormulaPrice(m.getId(), mb.getReceivedDate(), m); // giá công thức (có thể từ history)
-            BigDecimal variance = (formulaPrice == null ? null : formulaPrice.subtract(unitPrice));
-            BigDecimal varianceAmt = (variance == null ? BigDecimal.ZERO : variance.multiply(qty));
-            BigDecimal total = unitPrice.multiply(qty);
+            // MaterialBatch now contains multiple items, iterate through each item
+            if (mb.getBatchItems() == null || mb.getBatchItems().isEmpty()) {
+                continue; // Skip empty batches
+            }
+            
+            for (var item : mb.getBatchItems()) {
+                Material m = item.getMaterial();
+                if (m == null) continue;
+                
+                BigDecimal qty = nvl(item.getReceivedQuantity());
+                BigDecimal unitPrice = nvl(item.getUnitPrice()); // giá nhập theo item
+                BigDecimal formulaPrice = resolveFormulaPrice(m.getId(), mb.getReceivedDate(), m); // giá công thức
+                BigDecimal variance = (formulaPrice == null ? null : formulaPrice.subtract(unitPrice));
+                BigDecimal varianceAmt = (variance == null ? BigDecimal.ZERO : variance.multiply(qty));
+                BigDecimal total = unitPrice.multiply(qty);
 
-            MaterialCostVarianceResponse.Row row = new MaterialCostVarianceResponse.Row();
-            row.setDate(mb.getReceivedDate());
-            row.setCode(m.getMaterialCode());
-            row.setItemName(m.getMaterialName());
-            row.setUom(safeLower(m.getUnitOfMeasure())); // g/kg/…
-            row.setQuantity(scale(qty, 3));
-            row.setUnitPrice(scale(unitPrice, 2));
-            row.setFormulaPrice(formulaPrice == null ? null : scale(formulaPrice, 2));
-            row.setVariance(variance == null ? null : scale(variance, 2));
-            row.setVarianceAmount(scale(varianceAmt, 2));
-            row.setNotes(mb.getNotes());
-            row.setTotalAmount(scale(total, 2));
-            row.setSourceType("MATERIAL_BATCH");
-            row.setSourceId(mb.getId());
-            rows.add(row);
+                MaterialCostVarianceResponse.Row row = new MaterialCostVarianceResponse.Row();
+                row.setDate(mb.getReceivedDate());
+                row.setCode(m.getMaterialCode());
+                row.setItemName(m.getMaterialName());
+                var uom = m.getUnitOfMeasure();
+                String uomName = (uom != null) ? uom.getName() : "N/A";
+                row.setUom(safeLower(uomName)); // g/kg/…
+                row.setQuantity(scale(qty, 3));
+                row.setUnitPrice(scale(unitPrice, 2));
+                row.setFormulaPrice(formulaPrice == null ? null : scale(formulaPrice, 2));
+                row.setVariance(variance == null ? null : scale(variance, 2));
+                row.setVarianceAmount(scale(varianceAmt, 2));
+                row.setNotes(item.getNotes() != null ? item.getNotes() : mb.getNotes());
+                row.setTotalAmount(scale(total, 2));
+                row.setSourceType("MATERIAL_BATCH_ITEM");
+                row.setSourceId(item.getId());
+                rows.add(row);
+            }
         }
 
         // 2) Chi phí ngoài (Overhead) – hiển thị như dòng “OTHER_COST”

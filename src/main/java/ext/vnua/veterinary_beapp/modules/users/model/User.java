@@ -55,12 +55,39 @@ public class User extends AuditableEntity {
 
     @Column(name = "otp_generated_time")
     private Instant otpGeneratedTime;
+    
+    // Soft delete
+    @Column(name = "deleted_at")
+    private Instant deletedAt;
+    
+    @Column(name = "deleted_by")
+    private String deletedBy;
+    
+    // User status: ACTIVE, INACTIVE, LOCKED, PENDING_VERIFICATION
+    @Column(name = "status", length = 30)
+    private String status = "PENDING_VERIFICATION";
+    
+    // Password management
+    @Column(name = "password_changed_at")
+    private Instant passwordChangedAt;
+    
+    @Column(name = "must_change_password")
+    private Boolean mustChangePassword = false;
+    
+    // Account locking
+    @Column(name = "locked_until")
+    private Instant lockedUntil;
+    
+    @Column(name = "failed_login_attempts")
+    private Integer failedLoginAttempts = 0;
 
-    @Column(name = "department")
-    private String department;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "department_id", foreignKey = @ForeignKey(name = "fk_users_department"))
+    private Department department;
 
-    @Column(name = "position")
-    private String position;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "position_id", foreignKey = @ForeignKey(name = "fk_users_position"))
+    private Position position;
 
     @ManyToOne
     @JoinColumn(name = "role_id")

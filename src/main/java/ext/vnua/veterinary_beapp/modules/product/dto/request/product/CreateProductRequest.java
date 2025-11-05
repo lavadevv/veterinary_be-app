@@ -22,13 +22,9 @@ public class CreateProductRequest {
     @NotNull(message = "Dạng bào chế không được để trống")
     private FormulationType formulationType;
 
-    @NotBlank(message = "Quy cách đóng gói không được để trống")
-    private String packagingSpecification;
-
-    private String brandName;
-    private String qualityStandard;
-    private String registrationNumber;
-    private String circulationCode;
+    // ❌ REMOVED: packagingSpecification - Moved to ProductBrand
+    // ❌ REMOVED: brandName - Moved to ProductBrand
+    // ❌ REMOVED: qualityStandard, registrationNumber, circulationCode - Moved to ProductBrand
 
     @Min(value = 1, message = "Hạn sử dụng phải lớn hơn 0 tháng")
     private Integer shelfLifeMonths;
@@ -36,13 +32,15 @@ public class CreateProductRequest {
     @NotBlank(message = "Đơn vị tính không được để trống")
     private String unitOfMeasure;
 
+    // READ-ONLY: currentStock is calculated from inventory transactions
+    // Should not be set by user, but can be included for backward compatibility
     @DecimalMin(value = "0.0", message = "Tồn kho hiện tại không được âm")
     private Double currentStock = 0.0;
 
     private Double minimumStockLevel;
-    private Double costPrice;
-    private Double profitMarginPercentage;
-    private Double sellingPrice;
+    
+    // ❌ REMOVED: costPrice, profitMarginPercentage, sellingPrice - Moved to ProductBrand
+    
     private Boolean requiresColdStorage = false;
     private String specialStorageConditions;
     private Boolean isActive = true;

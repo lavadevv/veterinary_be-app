@@ -1,14 +1,17 @@
 package ext.vnua.veterinary_beapp.modules.material.dto.entity;
 
 import lombok.Data;
-import java.time.LocalDateTime;
 
 @Data
 public class WarehouseDto {
+
     private Long id;
     private String warehouseCode;
     private String warehouseName;
-    private String warehouseType;
+
+    // chỉ trả id để FE tự resolve name từ master
+    private Long warehouseTypeId;
+
     private String address;
     private String managerName;
     private String temperatureRange;
@@ -23,7 +26,7 @@ public class WarehouseDto {
                         "   - ID: %d\n" +
                         "   - Mã kho: %s\n" +
                         "   - Tên kho: %s\n" +
-                        "   - Loại kho: %s\n" +
+                        "   - Loại kho(ID): %s\n" +
                         "   - Địa chỉ: %s\n" +
                         "   - Người quản lý: %s\n" +
                         "   - Nhiệt độ: %s\n" +
@@ -33,7 +36,7 @@ public class WarehouseDto {
                 id,
                 warehouseCode,
                 warehouseName,
-                warehouseType,
+                String.valueOf(warehouseTypeId),
                 address,
                 managerName,
                 temperatureRange,
@@ -42,5 +45,4 @@ public class WarehouseDto {
                 Boolean.TRUE.equals(isActive) ? "Đang hoạt động" : "Ngừng hoạt động"
         );
     }
-
 }

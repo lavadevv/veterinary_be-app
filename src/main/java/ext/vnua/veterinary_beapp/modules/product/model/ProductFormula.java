@@ -14,7 +14,6 @@ import java.util.List;
 
 @Entity
 @Table(name = "product_formulas", indexes = {
-        @Index(name = "idx_formula_product", columnList = "product_id"),
         @Index(name = "idx_formula_active", columnList = "is_active"),
         @Index(name = "idx_formula_version", columnList = "version")
 })
@@ -29,8 +28,8 @@ public class ProductFormula extends AuditableEntity {
     private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "product_id", nullable = false)
-    private Product product;
+    @JoinColumn(name = "header_id", nullable = false)
+    private FormulaHeader header;
 
     @Column(name = "version", nullable = false)
     private String version;
@@ -50,6 +49,9 @@ public class ProductFormula extends AuditableEntity {
 
     @Column(name = "sop_file_path")
     private String sopFilePath;
+
+    @Column(name = "change_note", length = 500)
+    private String changeNote; // Lý do sửa/ghi chú
 
     /* ===== NEW: flags & basis ===== */
     @Column(name = "is_liquid_formula", nullable = false)

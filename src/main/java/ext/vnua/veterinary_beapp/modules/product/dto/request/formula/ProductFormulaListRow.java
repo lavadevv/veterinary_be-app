@@ -12,6 +12,9 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class ProductFormulaListRow {
     private Long id;
+    // Header info (để FE hiển thị đúng tên/mã công thức)
+    private String formulaCode;
+    private String formulaName;
 
     private Long productId;
     private String productCode;
@@ -27,7 +30,6 @@ public class ProductFormulaListRow {
     private LocalDateTime createdDate;
     private String createdBy;
 
-    private String productLabel;
     // thêm 2 trường để filter/hiển thị
     private ProductCategory productCategory;
     private FormulationType formulationType;

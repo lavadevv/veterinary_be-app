@@ -27,8 +27,11 @@ public class Warehouse extends AuditableEntity {
     @Column(name = "warehouse_name", nullable = false)
     private String warehouseName;
 
-    @Column(name = "warehouse_type")
-    private String warehouseType; // Kho nguyên liệu, kho bao bì, kho thành phẩm...
+    /** Tham chiếu master (id + name) */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "warehouse_type_id",
+            foreignKey = @ForeignKey(name = "fk_warehouses_warehouse_type"))
+    private WarehouseType warehouseType;
 
     @Column(name = "address", columnDefinition = "TEXT")
     private String address;

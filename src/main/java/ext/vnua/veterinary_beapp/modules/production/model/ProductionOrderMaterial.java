@@ -1,7 +1,7 @@
 package ext.vnua.veterinary_beapp.modules.production.model;
 
 import ext.vnua.veterinary_beapp.modules.audits.entity.AuditableEntity;
-import ext.vnua.veterinary_beapp.modules.material.model.MaterialBatch;
+import ext.vnua.veterinary_beapp.modules.material.model.MaterialBatchItem;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -24,9 +24,14 @@ public class ProductionOrderMaterial extends AuditableEntity {
     @JoinColumn(name = "production_order_id", nullable = false)
     private ProductionOrder productionOrder;
 
+    /**
+     * Reference đến MaterialBatchItem (một vật liệu cụ thể trong một lô)
+     * Sau khi refactor: MaterialBatch chứa nhiều MaterialBatchItem,
+     * nên cần reference trực tiếp đến item chứ không phải batch
+     */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "material_batch_id")
-    private MaterialBatch materialBatch; // lô nguyên liệu cụ thể
+    @JoinColumn(name = "material_batch_item_id")
+    private MaterialBatchItem materialBatchItem;
 
     @Column(name = "required_quantity", nullable = false, precision = 12, scale = 6)
     private BigDecimal requiredQuantity; // số lượng theo định mức

@@ -10,8 +10,13 @@ public class ProductBatchConsumptionDto {
     private Long productBatchId;
     private String productBatchNumber;
 
-    private Long materialBatchId;
+    // MaterialBatchItem info
+    private Long materialBatchItemId;
+    private String materialBatchItemCode;
     private String materialCode;
+    
+    // Parent batch info
+    private Long materialBatchId;
     private String materialBatchNumber;
 
     private BigDecimal plannedQuantity;

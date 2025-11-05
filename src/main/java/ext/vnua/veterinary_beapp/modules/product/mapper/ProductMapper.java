@@ -17,20 +17,17 @@ public interface ProductMapper {
 
     // Create request -> Entity
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "formulas", ignore = true)
     @Mapping(target = "batches", ignore = true)
     @Mapping(target = "registration", ignore = true)
     Product toCreateProduct(CreateProductRequest request);
 
     // Update request -> Entity
-    @Mapping(target = "formulas", ignore = true)
     @Mapping(target = "batches", ignore = true)
     @Mapping(target = "registration", ignore = true)
     Product toUpdateProduct(UpdateProductRequest request);
 
     // Update entity in-place từ request
     @Mapping(target = "id", ignore = true)
-    @Mapping(target = "formulas", ignore = true)
     @Mapping(target = "batches", ignore = true)
     @Mapping(target = "registration", ignore = true)
     void updateProductFromRequest(UpdateProductRequest request, @MappingTarget Product product);

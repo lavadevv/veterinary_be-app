@@ -44,21 +44,6 @@ public class Product extends AuditableEntity {
     @Column(name = "formulation_type", nullable = false)
     private FormulationType formulationType; // Bột uống, dung dịch, viên, tiêm, hỗn dịch, gel...
 
-    @Column(name = "packaging_specification", nullable = false)
-    private String packagingSpecification; // 100g/hũ, 10ml/ống x 10 ống/hộp, 25kg/bao...
-
-    @Column(name = "brand_name")
-    private String brandName; // Daeyong, Hope, Oringer...
-
-    @Column(name = "quality_standard", columnDefinition = "TEXT")
-    private String qualityStandard; // Dược điển (nếu có), TCCS, hoặc theo quy định nội bộ
-
-    @Column(name = "registration_number")
-    private String registrationNumber; // Số hồ sơ đăng ký hoặc công bố sản phẩm
-
-    @Column(name = "circulation_code")
-    private String circulationCode; // Mã số công bố hoặc số lưu hành
-
     @Column(name = "shelf_life_months")
     private Integer shelfLifeMonths; // Thời hạn sử dụng tính bằng tháng
 
@@ -70,15 +55,6 @@ public class Product extends AuditableEntity {
 
     @Column(name = "minimum_stock_level")
     private Double minimumStockLevel;
-
-    @Column(name = "cost_price")
-    private Double costPrice; // Giá cost = giá nguyên liệu + chi phí sản xuất
-
-    @Column(name = "profit_margin_percentage")
-    private Double profitMarginPercentage; // Tỷ lệ % lợi nhuận trước thuế
-
-    @Column(name = "selling_price")
-    private Double sellingPrice; // Giá bán = cost price * (1 + profit margin)
 
     @Column(name = "requires_cold_storage", nullable = false)
     private Boolean requiresColdStorage = false;
@@ -93,12 +69,19 @@ public class Product extends AuditableEntity {
     private String notes;
 
     // Relationships
-    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
-    private List<ProductFormula> formulas;
+    @ManyToMany(mappedBy = "products", fetch = FetchType.LAZY)
+    private List<FormulaHeader> formulaHeaders;
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private List<ProductBatch> batches;
 
     @OneToOne(mappedBy = "product", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private ProductRegistration registration;
+
+    /**
+     * Relationship with ProductBrand
+     * One product can have multiple brands with different pricing
+     */
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, fetch = FetchType.LAZY, orphanRemoval = true)
+    private List<ProductBrand> productBrands;
 }

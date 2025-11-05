@@ -1,17 +1,64 @@
 package ext.vnua.veterinary_beapp.modules.material.model;
 
 import ext.vnua.veterinary_beapp.modules.audits.entity.AuditableEntity;
+import ext.vnua.veterinary_beapp.modules.material.enums.BatchStatus;
 import ext.vnua.veterinary_beapp.modules.material.enums.TestStatus;
 import ext.vnua.veterinary_beapp.modules.material.enums.UsageStatus;
 import jakarta.persistence.*;
+import jakarta.persistence.NamedAttributeNode;
+import jakarta.persistence.NamedEntityGraph;
+import jakarta.persistence.NamedSubgraph;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
+@NamedEntityGraph(
+        name = MaterialBatch.ENTITY_GRAPH_WITH_DETAILS,
+        attributeNodes = {
+                @NamedAttributeNode(value = "batchItems", subgraph = "batchItemDetails"),
+                @NamedAttributeNode(value = "location", subgraph = "locationDetails"),
+                @NamedAttributeNode("supplier"),
+                @NamedAttributeNode("manufacturer")
+        },
+        subgraphs = {
+                @NamedSubgraph(
+                        name = "batchItemDetails",
+                        attributeNodes = {
+                                @NamedAttributeNode(value = "material", subgraph = "materialDetails"),
+                                @NamedAttributeNode("location"),
+                                @NamedAttributeNode(value = "batchItemActiveIngredients", subgraph = "activeIngredientDetails")
+                        }
+                ),
+                @NamedSubgraph(
+                        name = "materialDetails",
+                        attributeNodes = {
+                                @NamedAttributeNode("supplier"),
+                                @NamedAttributeNode("unitOfMeasure"),
+                                @NamedAttributeNode("materialCategory"),
+                                @NamedAttributeNode("materialFormType")
+                        }
+                ),
+                @NamedSubgraph(
+                        name = "locationDetails",
+                        attributeNodes = {
+                                @NamedAttributeNode("warehouse")
+                        }
+                ),
+                @NamedSubgraph(
+                        name = "activeIngredientDetails",
+                        attributeNodes = {
+                                @NamedAttributeNode("activeIngredient")
+                        }
+                )
+        }
+)
 @Entity
 @Table(name = "material_batches")
 @Data
@@ -20,128 +67,221 @@ import java.time.LocalDate;
 @EqualsAndHashCode(callSuper = true)
 public class MaterialBatch extends AuditableEntity {
 
+    public static final String ENTITY_GRAPH_WITH_DETAILS = "MaterialBatch.withDetails";
+
+    private static final int QTY_SCALE = 3;
+    private static final int MONEY_SCALE = 2;
+    private static final int PERCENT_SCALE = 4;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "material_id", nullable = false)
-    private Material material;
+    /** Mã lô nhập hàng (một lần nhập có thể chứa nhiều vật liệu) */
+    @Column(name = "batch_number", nullable = false, unique = true, length = 100)
+    private String batchNumber;
 
-    @Column(name = "batch_number", nullable = false)
-    private String batchNumber; // Mã lô nhà sản xuất
+    /** Mã lô nội bộ */
+    @Column(name = "internal_batch_code", unique = true, length = 100)
+    private String internalBatchCode;
 
-    @Column(name = "internal_batch_code", unique = true)
-    private String internalBatchCode; // Mã lô nội bộ
-
-    @Column(name = "manufacturer_batch_number")
-    private String manufacturerBatchNumber;
-
-    @Column(name = "manufacturing_date")
-    private LocalDate manufacturingDate;
-
-    @Column(name = "expiry_date")
-    private LocalDate expiryDate;
-
+    /** Ngày nhập hàng */
     @Column(name = "received_date", nullable = false)
     private LocalDate receivedDate;
 
-    @Column(name = "received_quantity", nullable = false, precision = 15, scale = 3)
-    private BigDecimal receivedQuantity;
-
-    @Column(name = "current_quantity", nullable = false, precision = 15, scale = 3)
-    private BigDecimal currentQuantity;
-
-    @Column(name = "unit_price", precision = 15, scale = 2)
-    private BigDecimal unitPrice;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "test_status", nullable = false)
-    private TestStatus testStatus = TestStatus.CHO_KIEM_NGHIEM;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "usage_status", nullable = false)
-    private UsageStatus usageStatus = UsageStatus.CACH_LY;
-
+    /** Vị trí kho mặc định cho lô (có thể override ở từng item) */
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "location_id")
+    @JoinColumn(name = "location_id",
+            foreignKey = @ForeignKey(name = "fk_batches_location"))
     private Location location;
 
-    @Column(name = "coa_number")
-    private String coaNumber; // Certificate of Analysis number
+    // ====== THÔNG TIN NCC/NSX CHUNG CỦA LÔ NHẬP ======
 
-    @Column(name = "test_report_number")
-    private String testReportNumber;
+    /** Nhà cung cấp của lô nhập này */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "supplier_id",
+            foreignKey = @ForeignKey(name = "fk_batches_supplier"))
+    private Supplier supplier;
 
-    @Column(name = "test_results", columnDefinition = "JSON")
-    private String testResults; // JSON format for test parameters
+    /** Nhà sản xuất chung (nếu có) */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "manufacturer_id",
+            foreignKey = @ForeignKey(name = "fk_batches_manufacturer"))
+    private Manufacturer manufacturer;
 
-    @Column(name = "quarantine_reason", columnDefinition = "TEXT")
-    private String quarantineReason;
+    /** Quốc gia xuất xứ chung */
+    @Column(name = "country_of_origin", length = 100)
+    private String countryOfOrigin;
 
-    @Column(name = "coa_file_path")
-    private String coaFilePath;
+    /** Số hóa đơn nhập hàng */
+    @Column(name = "invoice_number", length = 100)
+    private String invoiceNumber;
 
-    @Column(name = "msds_file_path")
-    private String msdsFilePath;
+    /** Tổng tiền của toàn bộ lô (tính từ các items) */
+    @Column(name = "total_amount", precision = 18, scale = MONEY_SCALE)
+    private BigDecimal totalAmount;
 
-    @Column(name = "test_certificate_path")
-    private String testCertificatePath;
+    // ====== DANH SÁCH CÁC VẬT LIỆU TRONG LÔ ======
+
+    /** Các vật liệu cụ thể trong lô nhập này */
+    @OneToMany(mappedBy = "batch", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<MaterialBatchItem> batchItems = new ArrayList<>();
+
+    // ====== THÔNG TIN CHUNG ======
 
     @Column(name = "notes", columnDefinition = "TEXT")
     private String notes;
 
-    @Override
-    public String toString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append("\n=== THÔNG TIN LÔ NGUYÊN LIỆU ===\n");
-        sb.append("Mã lô nội bộ         : ").append(internalBatchCode != null ? internalBatchCode : "Chưa có").append("\n");
-        sb.append("Mã lô NSX            : ").append(batchNumber).append("\n");
-        if (manufacturerBatchNumber != null) sb.append("Mã lô của hãng       : ").append(manufacturerBatchNumber).append("\n");
-        if (manufacturingDate != null) sb.append("Ngày sản xuất        : ").append(manufacturingDate).append("\n");
-        if (expiryDate != null) sb.append("Hạn sử dụng          : ").append(expiryDate).append("\n");
-        sb.append("Ngày nhập            : ").append(receivedDate).append("\n");
-        sb.append("Số lượng nhập        : ").append(receivedQuantity).append(" ").append(material.getUnitOfMeasure()).append("\n");
-        sb.append("Số lượng hiện tại    : ").append(currentQuantity).append(" ").append(material.getUnitOfMeasure()).append("\n");
-        if (unitPrice != null) sb.append("Đơn giá              : ").append(unitPrice).append(" VND\n");
-        sb.append("Tình trạng kiểm nghiệm: ").append(testStatus.getDisplayName()).append("\n");
-        sb.append("Trạng thái sử dụng   : ").append(usageStatus.getDisplayName()).append("\n");
-        if (location != null) sb.append("Vị trí kho           : ").append(location.getLocationCode()).append("\n");
-        if (coaNumber != null) sb.append("Số COA               : ").append(coaNumber).append("\n");
-        if (testReportNumber != null) sb.append("Số báo cáo kiểm nghiệm: ").append(testReportNumber).append("\n");
-        if (quarantineReason != null) sb.append("Lý do cách ly        : ").append(quarantineReason).append("\n");
-        if (notes != null) sb.append("Ghi chú              : ").append(notes).append("\n");
-        return sb.toString();
-    }
+    /** Trạng thái chung của lô */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "batch_status", length = 50)
+    private BatchStatus batchStatus = BatchStatus.ACTIVE; // ACTIVE, COMPLETED, CANCELLED
 
-    // thêm 2 trường bổ sung để theo dõi chi tiết hơn
-    @Column(name = "reserved_quantity", precision = 15, scale = 3)
-    private BigDecimal reservedQuantity = BigDecimal.ZERO;
+    // ======================== Lifecycle =========================
 
-    @Column(name = "available_quantity", precision = 15, scale = 3)
-    private BigDecimal availableQuantity;
-
-
-    // trong class MaterialBatch
     @PrePersist
     public void prePersist() {
-        if (reservedQuantity == null) reservedQuantity = java.math.BigDecimal.ZERO;
-        if (availableQuantity == null) {
-            // nếu chưa set, mặc định available = current - reserved (>= 0)
-            availableQuantity = (currentQuantity != null ? currentQuantity : java.math.BigDecimal.ZERO)
-                    .subtract(reservedQuantity);
-            if (availableQuantity.signum() < 0) availableQuantity = java.math.BigDecimal.ZERO;
-        }
+        recalcTotalAmount();
     }
 
     @PreUpdate
     public void preUpdate() {
-        if (reservedQuantity == null) reservedQuantity = java.math.BigDecimal.ZERO;
-        if (availableQuantity == null) availableQuantity = java.math.BigDecimal.ZERO;
-        // đảm bảo không âm
-        if (availableQuantity.signum() < 0) availableQuantity = java.math.BigDecimal.ZERO;
+        recalcTotalAmount();
     }
 
+    @PostLoad
+    public void postLoad() {
+        // Recalculate totalAmount after loading from DB
+        // to ensure it's up-to-date with current items
+        recalcTotalAmount();
+    }
 
+    /**
+     * Tính tổng tiền của toàn bộ lô từ các items
+     */
+    private void recalcTotalAmount() {
+        if (batchItems == null || batchItems.isEmpty()) {
+            this.totalAmount = BigDecimal.ZERO.setScale(MONEY_SCALE, RoundingMode.HALF_UP);
+            return;
+        }
+
+        BigDecimal sum = BigDecimal.ZERO;
+        for (MaterialBatchItem item : batchItems) {
+            if (item.getTotalAmount() != null) {
+                sum = sum.add(item.getTotalAmount());
+            }
+        }
+        this.totalAmount = sum.setScale(MONEY_SCALE, RoundingMode.HALF_UP);
+    }
+
+    // ======================== Business Methods =========================
+
+    /**
+     * Thêm một vật liệu vào lô
+     */
+    public void addBatchItem(MaterialBatchItem item) {
+        if (batchItems == null) {
+            batchItems = new ArrayList<>();
+        }
+        batchItems.add(item);
+        item.setBatch(this);
+    }
+
+    /**
+     * Xóa một vật liệu khỏi lô
+     */
+    public void removeBatchItem(MaterialBatchItem item) {
+        if (batchItems != null) {
+            batchItems.remove(item);
+            item.setBatch(null);
+        }
+    }
+
+    /**
+     * Lấy tổng số lượng vật liệu trong lô
+     */
+    public int getTotalItemsCount() {
+        return batchItems != null ? batchItems.size() : 0;
+    }
+
+    /**
+     * Kiểm tra tất cả items trong lô có đạt chuẩn hay không
+     */
+    public Boolean isAllItemsQualified() {
+        if (batchItems == null || batchItems.isEmpty()) {
+            return null;
+        }
+
+        boolean hasData = false;
+        for (MaterialBatchItem item : batchItems) {
+            Boolean qualified = item.isAllActiveIngredientsQualified();
+            if (qualified != null) {
+                hasData = true;
+                if (!qualified) {
+                    return false;
+                }
+            }
+        }
+
+        return hasData ? true : null;
+    }
+
+    /**
+     * Lấy danh sách các items không đạt chuẩn
+     */
+    public List<MaterialBatchItem> getUnqualifiedItems() {
+        List<MaterialBatchItem> unqualified = new ArrayList<>();
+        if (batchItems != null) {
+            for (MaterialBatchItem item : batchItems) {
+                if (Boolean.FALSE.equals(item.isAllActiveIngredientsQualified())) {
+                    unqualified.add(item);
+                }
+            }
+        }
+        return unqualified;
+    }
+
+    // ========================= toString =========================
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("\n=== THÔNG TIN LÔ NHẬP HÀNG ===\n");
+        sb.append("Mã lô nhập           : ").append(batchNumber).append("\n");
+        sb.append("Mã lô nội bộ         : ").append(internalBatchCode != null ? internalBatchCode : "Chưa có").append("\n");
+        sb.append("Ngày nhập            : ").append(receivedDate).append("\n");
+        
+        if (supplier != null) sb.append("Nhà cung cấp         : ").append(supplier.getSupplierName()).append("\n");
+        if (manufacturer != null) sb.append("Nhà sản xuất         : ").append(manufacturer.getManufacturerName()).append("\n");
+        if (countryOfOrigin != null) sb.append("Xuất xứ              : ").append(countryOfOrigin).append("\n");
+        if (invoiceNumber != null) sb.append("Số hóa đơn           : ").append(invoiceNumber).append("\n");
+        if (location != null) sb.append("Vị trí kho mặc định  : ").append(location.getLocationCode()).append("\n");
+        
+        sb.append("Tổng tiền lô         : ").append(totalAmount != null ? totalAmount : BigDecimal.ZERO).append(" VND\n");
+        sb.append("Số lượng vật liệu    : ").append(getTotalItemsCount()).append("\n");
+        sb.append("Trạng thái lô        : ").append(batchStatus).append("\n");
+        
+        if (notes != null) sb.append("Ghi chú              : ").append(notes).append("\n");
+        
+        // Hiển thị thông tin các items
+        if (batchItems != null && !batchItems.isEmpty()) {
+            sb.append("\n--- Chi tiết vật liệu trong lô ---\n");
+            for (int i = 0; i < batchItems.size(); i++) {
+                MaterialBatchItem item = batchItems.get(i);
+                sb.append("[").append(i + 1).append("] ");
+                if (item.getMaterial() != null) {
+                    sb.append(item.getMaterial().getMaterialName());
+                    sb.append(" (").append(item.getMaterial().getMaterialCode()).append(")");
+                }
+                sb.append(" - SL: ").append(item.getCurrentQuantity());
+                if (item.getMaterial() != null && item.getMaterial().getUnitOfMeasure() != null) {
+                    sb.append(" ").append(item.getMaterial().getUnitOfMeasure().getName());
+                }
+                sb.append(" - Giá: ").append(item.getTotalAmount() != null ? item.getTotalAmount() : BigDecimal.ZERO).append(" VND");
+                sb.append("\n");
+            }
+        }
+        
+        return sb.toString();
+    }
 }
-

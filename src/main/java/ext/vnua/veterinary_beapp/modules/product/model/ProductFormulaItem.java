@@ -7,6 +7,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "product_formula_items", indexes = {
@@ -60,4 +62,17 @@ public class ProductFormulaItem {
 
     @Column(name = "achieved_percent", precision = 7, scale = 1)
     private BigDecimal achievedPercent;          // % đạt (làm tròn 1 số)
+
+    /**
+     * NEW: Danh sách các hoạt chất (Active Ingredients) tracking
+     * Mỗi Material có thể có nhiều hoạt chất, cần theo dõi riêng từng hoạt chất
+     * User sẽ nhập labelAmount cho từng hoạt chất và hệ thống tính toán % đạt
+     */
+    @OneToMany(
+            mappedBy = "formulaItem",
+            cascade = CascadeType.ALL,
+            fetch = FetchType.EAGER,
+            orphanRemoval = true
+    )
+    private List<ProductFormulaItemActiveIngredient> activeIngredients = new ArrayList<>();
 }

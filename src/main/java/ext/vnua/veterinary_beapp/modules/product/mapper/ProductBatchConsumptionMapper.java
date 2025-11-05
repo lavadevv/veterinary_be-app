@@ -8,8 +8,15 @@ import org.mapstruct.*;
 public interface ProductBatchConsumptionMapper {
     @Mapping(source = "productBatch.id", target = "productBatchId")
     @Mapping(source = "productBatch.batchNumber", target = "productBatchNumber")
-    @Mapping(source = "materialBatch.id", target = "materialBatchId")
-    @Mapping(source = "materialBatch.material.materialCode", target = "materialCode")
-    @Mapping(source = "materialBatch.batchNumber", target = "materialBatchNumber")
+    
+    // MaterialBatchItem mappings
+    @Mapping(source = "materialBatchItem.id", target = "materialBatchItemId")
+    @Mapping(source = "materialBatchItem.material.materialCode", target = "materialCode")
+    @Mapping(source = "materialBatchItem.internalItemCode", target = "materialBatchItemCode")
+    
+    // Parent batch info
+    @Mapping(source = "materialBatchItem.batch.id", target = "materialBatchId")
+    @Mapping(source = "materialBatchItem.batch.batchNumber", target = "materialBatchNumber")
+    
     ProductBatchConsumptionDto toDto(ProductBatchConsumption entity);
 }

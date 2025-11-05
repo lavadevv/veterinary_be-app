@@ -3,17 +3,16 @@ package ext.vnua.veterinary_beapp.modules.product.services.impl;
 import ext.vnua.veterinary_beapp.exception.DataExistException;
 import ext.vnua.veterinary_beapp.modules.audits.common.Auditable;
 import ext.vnua.veterinary_beapp.modules.audits.enums.AuditAction;
+import ext.vnua.veterinary_beapp.modules.material.model.Material;
+import ext.vnua.veterinary_beapp.modules.material.repository.MaterialRepository;
 import ext.vnua.veterinary_beapp.modules.product.dto.ProductFormulaDto;
 import ext.vnua.veterinary_beapp.modules.product.dto.request.formula.ProductFormulaListRow;
 import ext.vnua.veterinary_beapp.modules.product.dto.request.productBatch.UpsertFormulaRequest;
 import ext.vnua.veterinary_beapp.modules.product.mapper.ProductFormulaMapper;
-import ext.vnua.veterinary_beapp.modules.product.model.Product;
-import ext.vnua.veterinary_beapp.modules.product.model.ProductFormula;
-import ext.vnua.veterinary_beapp.modules.product.model.ProductFormulaItem;
+import ext.vnua.veterinary_beapp.modules.product.model.*;
+import ext.vnua.veterinary_beapp.modules.product.repository.FormulaHeaderRepository;
 import ext.vnua.veterinary_beapp.modules.product.repository.ProductFormulaRepository;
 import ext.vnua.veterinary_beapp.modules.product.repository.ProductRepository;
-import ext.vnua.veterinary_beapp.modules.material.model.Material;
-import ext.vnua.veterinary_beapp.modules.material.repository.MaterialRepository;
 import ext.vnua.veterinary_beapp.modules.product.repository.custom.CustomProductFormulaQuery;
 import ext.vnua.veterinary_beapp.modules.product.services.ProductFormulaService;
 import jakarta.transaction.Transactional;
@@ -25,10 +24,16 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 
+/**
+ * ProductFormulaServiceImpl — phiên bản dùng kiến trúc Header/Version
+ * - Upsert: luôn tạo bản ghi phiên bản mới (snapshot)
+ * - Active: kích hoạt 1 phiên bản và tự động deactivate các phiên bản khác cùng header
+ * - Lấy theo productId: dựa vào header.products (ManyToMany)
+ */
 @Service
 @RequiredArgsConstructor
 public class ProductFormulaServiceImpl implements ProductFormulaService {
@@ -37,33 +42,67 @@ public class ProductFormulaServiceImpl implements ProductFormulaService {
     private final ProductFormulaRepository formulaRepo;
     private final ProductFormulaMapper mapper;
     private final MaterialRepository materialRepo;
+    private final FormulaHeaderRepository headerRepo;
+
+    /* ============================ CORE ============================ */
 
     @Override
     @Transactional
-    @Auditable(action = AuditAction.CREATE, entityName = "ProductFormula", description = "Thêm hoặc cập nhật công thức sản phẩm")
+    @Auditable(action = AuditAction.CREATE, entityName = "ProductFormula", description = "Thêm phiên bản công thức sản phẩm")
     public ProductFormulaDto upsertFormula(UpsertFormulaRequest req) {
-        // 1) Validate product
-        Product p = productRepo.findById(req.getProductId())
-                .orElseThrow(() -> new DataExistException("Sản phẩm không tồn tại"));
+        // 1) Header (bắt buộc có formulaCode)
+        if (req.getFormulaCode() == null || req.getFormulaCode().isBlank()) {
+            throw new DataExistException("Thiếu formulaCode");
+        }
+        FormulaHeader header = headerRepo.findByFormulaCode(req.getFormulaCode())
+                .orElseGet(() -> {
+                    FormulaHeader h = new FormulaHeader();
+                    h.setFormulaCode(req.getFormulaCode());
+                    h.setFormulaName(req.getFormulaName());
+                    h.setDescription(req.getHeaderDescription());
+                    return headerRepo.save(h);
+                });
+
+        // (tuỳ chọn) gán products cho header nếu có productIds trong request
+        // REPLACE toàn bộ products (không ADD thêm vào list cũ)
+        if (req.getProductIds() != null && !req.getProductIds().isEmpty()) {
+            Set<Product> ps = new HashSet<>(productRepo.findAllById(req.getProductIds()));
+            header.getProducts().clear(); // Xóa hết products cũ
+            header.getProducts().addAll(ps); // Thêm products mới
+            headerRepo.save(header);
+        }
 
         if (req.getItems() == null || req.getItems().isEmpty()) {
             throw new DataExistException("Danh sách nguyên vật liệu trống");
         }
 
-        // 2) Lấy/khởi tạo công thức
-        ProductFormula f = formulaRepo.findByProductIdAndVersion(req.getProductId(), req.getVersion())
-                .orElseGet(ProductFormula::new);
+        // 2) Tạo phiên bản mới
+        ProductFormula f = new ProductFormula();
+        f.setHeader(header);
+        f.setVersion(req.getVersion() != null && !req.getVersion().isBlank()
+                ? req.getVersion()
+                : DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss").format(LocalDateTime.now()));
 
-        f.setProduct(p);
-        f.setVersion(req.getVersion());
+        // ===== VALIDATION: Check duplicate version in same header =====
+        boolean versionExists = formulaRepo.findAllVersions(header.getFormulaCode(), PageRequest.of(0, 1000))
+                .stream()
+                .anyMatch(existing -> existing.getVersion().equals(f.getVersion()));
+        if (versionExists) {
+            throw new DataExistException(
+                    String.format("Version '%s' đã tồn tại cho công thức '%s'. Vui lòng sử dụng version khác.",
+                            f.getVersion(), header.getFormulaCode())
+            );
+        }
+
         f.setBatchSize(req.getBatchSize());
         f.setDescription(emptyToNull(req.getDescription()));
         f.setSopFilePath(emptyToNull(req.getSopFilePath()));
         f.setIsActive(req.getIsActive() != null ? req.getIsActive() : Boolean.TRUE);
+        f.setChangeNote(emptyToNull(req.getChangeNote()));
 
-        // Giữ cờ dung dịch để ràng buộc tổng %
+        // Cờ & cơ sở tính
         f.setIsLiquidFormula(Boolean.TRUE.equals(req.getIsLiquidFormula()));
-        f.setBasisValue(req.getBasisValue()); // không còn dùng vào tính toán nhưng giữ để hiển thị nếu cần
+        f.setBasisValue(req.getBasisValue());
         f.setBasisUnit(req.getBasisUnit());
         f.setDensity(req.getDensity());
 
@@ -71,7 +110,7 @@ public class ProductFormulaServiceImpl implements ProductFormulaService {
         if (f.getFormulaItems() == null) f.setFormulaItems(new ArrayList<>());
         else f.getFormulaItems().clear();
 
-        // 4) Tính toán
+        // 4) Tính toán nội dung hoạt chất/định mức
         int lineNo = 0;
         BigDecimal sumPct = BigDecimal.ZERO;
 
@@ -115,13 +154,20 @@ public class ProductFormulaServiceImpl implements ProductFormulaService {
             }
 
             Material materialRef = materialRepo.getReferenceById(it.getMaterialId());
-            // === HÀM LƯỢNG HOẠT CHẤT: iuPerGram (mg/g) ===
-            BigDecimal iuPerGram = materialRef.getIuPerGram();
+            // Load Material with activeIngredients eagerly using EntityGraph (already configured in repo)
+            Material material = materialRepo.findById(it.getMaterialId())
+                    .orElseThrow(() -> new DataExistException("Material không tồn tại: ID=" + it.getMaterialId()));
+            
+            // EntityGraph in MaterialRepository already loads activeIngredients and nested activeIngredient entities
+            // No need for manual force loading
+            
+            // Hàm lượng hoạt chất: iuPerGram (mg/g) - LEGACY field, sẽ dần bỏ khi dùng activeIngredients
+            BigDecimal iuPerGram = material.getIuPerGram();
             if (iuPerGram == null || iuPerGram.signum() < 0) iuPerGram = BigDecimal.ZERO;
 
             ProductFormulaItem e = new ProductFormulaItem();
             e.setFormula(f);
-            e.setMaterial(materialRef);
+            e.setMaterial(material);
             e.setIsCritical(Boolean.TRUE.equals(it.getIsCritical()));
             e.setNotes(emptyToNull(it.getNotes()));
 
@@ -132,20 +178,18 @@ public class ProductFormulaServiceImpl implements ProductFormulaService {
             BigDecimal formulaMg; // kết quả hàm lượng công thức (mg)
 
             if (hasPercent) {
-                // Lưu theo %
+                // Lưu theo % → gramsOfMaterial = basisGram * (%/100); mg = (mg/g) * grams
                 e.setPercentage(it.getPercentage());
                 e.setQuantity(null);
                 e.setUnit(null);
                 sumPct = sumPct.add(it.getPercentage());
 
-                // === CÔNG THỨC ĐÚNG: mg = (mg/g) * (g NVL) ; g NVL = basisGram * (%/100)
                 BigDecimal gramsOfMaterial = basisGram.multiply(
                         it.getPercentage().divide(ONE_HUNDRED, DIV_SCALE, RoundingMode.HALF_UP)
                 );
                 formulaMg = iuPerGram.multiply(gramsOfMaterial);
-
             } else {
-                // Lưu theo định mức tuyệt đối (giữ như cũ): iuPerGram(mg/g) * grams => mg
+                // Lưu theo định mức tuyệt đối: iuPerGram(mg/g) * grams => mg
                 String unit = it.getUnit().trim().toLowerCase();
                 if (!Objects.equals(unit, "g") && !Objects.equals(unit, "kg")) {
                     throw new DataExistException("Chưa hỗ trợ đơn vị định mức: " + it.getUnit());
@@ -164,20 +208,90 @@ public class ProductFormulaServiceImpl implements ProductFormulaService {
             e.setFormulaContentAmount(formulaMg);
             e.setFormulaContentUnit("mg");
 
-            // % đạt = formula * 100 / label
             // % đạt = formula(mg) * 100 / label(mg)  (làm tròn 1 chữ số)
             if (it.getLabelAmount() != null && it.getLabelAmount().signum() > 0) {
-                BigDecimal labelInMg = toMgSafe(it.getLabelAmount(), it.getLabelUnit()); // <— new
+                BigDecimal labelInMg = toMgSafe(it.getLabelAmount(), it.getLabelUnit());
                 if (labelInMg != null && labelInMg.signum() > 0) {
                     BigDecimal achieved = formulaMg.multiply(ONE_HUNDRED)
                             .divide(labelInMg, DIV_SCALE, RoundingMode.HALF_UP);
                     e.setAchievedPercent(round1(achieved)); // 1 chữ số
                 } else {
-                    // không hỗ trợ đơn vị, bỏ qua tính % đạt
                     e.setAchievedPercent(null);
                 }
             }
 
+            // ===== NEW: Populate Active Ingredients tracking =====
+            // Tính gramsOfMaterial để dùng cho tất cả activeIngredients
+            BigDecimal gramsOfMaterial;
+            if (hasPercent) {
+                gramsOfMaterial = basisGram.multiply(
+                        e.getPercentage().divide(ONE_HUNDRED, DIV_SCALE, RoundingMode.HALF_UP)
+                );
+            } else {
+                String unit = e.getUnit().trim().toLowerCase();
+                gramsOfMaterial = unit.equals("kg")
+                        ? e.getQuantity().multiply(THOUSAND)
+                        : e.getQuantity(); // g
+            }
+            
+            // Load activeIngredients from Material and create tracking records
+            if (material.getActiveIngredients() != null && !material.getActiveIngredients().isEmpty()) {
+                for (var mai : material.getActiveIngredients()) {
+                    ProductFormulaItemActiveIngredient aiTracking = new ProductFormulaItemActiveIngredient();
+                    aiTracking.setFormulaItem(e);
+                    
+                    // EntityGraph already loaded activeIngredient - safe to access directly
+                    Long aiId = null;
+                    String aiName = "Unknown";
+                    if (mai.getActiveIngredient() != null) {
+                        aiId = mai.getActiveIngredient().getId();
+                        aiName = mai.getActiveIngredient().getIngredientName();
+                    }
+                    
+                    aiTracking.setActiveIngredientId(aiId);
+                    aiTracking.setActiveIngredientName(aiName);
+                    aiTracking.setContentValue(mai.getContentValue());
+                    aiTracking.setContentUnit(mai.getContentUnit());
+                    
+                    // Initialize label fields (will be filled by user later from frontend request if provided)
+                    // Check if request has activeIngredients data
+                    if (it.getActiveIngredients() != null) {
+                        var reqAi = it.getActiveIngredients().stream()
+                                .filter(a -> a.getActiveIngredientId() != null && 
+                                        a.getActiveIngredientId().equals(mai.getActiveIngredient().getId()))
+                                .findFirst()
+                                .orElse(null);
+                        if (reqAi != null) {
+                            aiTracking.setLabelAmount(reqAi.getLabelAmount());
+                            aiTracking.setLabelUnit(reqAi.getLabelUnit());
+                            aiTracking.setNotes(reqAi.getNotes());
+                        }
+                    }
+                    
+                    // Calculate formulaContentAmount
+                    // contentValue is in unit per gram (e.g., mg/g, IU/g)
+                    // Formula: contentValue × gramsOfMaterial
+                    if (mai.getContentValue() != null && gramsOfMaterial != null) {
+                        BigDecimal formulaContent = mai.getContentValue().multiply(gramsOfMaterial);
+                        aiTracking.setFormulaContentAmount(formulaContent);
+                        aiTracking.setFormulaContentUnit(extractFormulaUnit(mai.getContentUnit())); // Extract "mg" from "mg/g"
+                        
+                        // Calculate achievedPercent if labelAmount is provided
+                        if (aiTracking.getLabelAmount() != null && aiTracking.getLabelAmount().signum() > 0) {
+                            BigDecimal labelInBaseUnit = toMgSafe(aiTracking.getLabelAmount(), aiTracking.getLabelUnit());
+                            if (labelInBaseUnit != null && labelInBaseUnit.signum() > 0) {
+                                BigDecimal achieved = formulaContent.multiply(ONE_HUNDRED)
+                                        .divide(labelInBaseUnit, DIV_SCALE, RoundingMode.HALF_UP);
+                                aiTracking.setAchievedPercent(achieved);
+                            }
+                        }
+                    }
+                    
+                    e.getActiveIngredients().add(aiTracking);
+                }
+            }
+            // If material has NO active ingredients, that's OK - just leave the list empty
+            // Frontend will show warning but still allow saving
 
             f.getFormulaItems().add(e);
         }
@@ -190,36 +304,58 @@ public class ProductFormulaServiceImpl implements ProductFormulaService {
         }
 
         ProductFormula saved = formulaRepo.saveAndFlush(f);
+
+        // Nếu phiên bản này active → hạ active các phiên bản khác cùng header
+        if (Boolean.TRUE.equals(saved.getIsActive())) {
+            formulaRepo.deactivateOthers(header.getId(), saved.getId());
+        }
         return mapper.toDto(saved);
-    }
-
-
-
-    @Override
-    public ProductFormulaDto getActiveFormula(Long productId) {
-        var f = formulaRepo.findFirstActiveByProductIdWithProduct(productId)
-                .orElseThrow(() -> new DataExistException("Chưa có công thức active"));
-        return mapper.toDto(f);
-    }
-
-    @Override
-    public List<ProductFormulaDto> listFormulas(Long productId) {
-        return formulaRepo.findByProductIdWithProductOrderByCreatedDateDesc(productId)
-                .stream().map(mapper::toDto).toList();
     }
 
     @Override
     @Transactional
-    @Auditable(action = AuditAction.UPDATE, entityName = "ProductFormula", description = "Kích hoạt công thức sản phẩm")
+    public ProductFormulaDto getActiveFormula(Long productId) {
+        // Lấy tất cả header gắn với productId
+        var headers = headerRepo.searchHeaders(null, productId, PageRequest.of(0, 100)).getContent();
+        if (headers.isEmpty()) throw new DataExistException("Sản phẩm chưa gắn công thức");
+
+        // Ưu tiên phiên bản active mới nhất trong từng header
+        for (var h : headers) {
+            var page = formulaRepo.findAllVersions(h.getFormulaCode(), PageRequest.of(0, 20));
+            Optional<ProductFormula> activeLatest = page.stream()
+                    .filter(ProductFormula::getIsActive)
+                    .findFirst();
+            if (activeLatest.isPresent()) return mapper.toDto(activeLatest.get());
+        }
+
+        // Fallback: lấy phiên bản mới nhất của header đầu tiên (theo createdDate desc)
+        var page = formulaRepo.findAllVersions(headers.get(0).getFormulaCode(), PageRequest.of(0, 1));
+        if (page.isEmpty()) throw new DataExistException("Chưa có phiên bản công thức");
+        return mapper.toDto(page.getContent().get(0));
+    }
+
+    @Override
+    @Transactional
+    public List<ProductFormulaDto> listFormulas(Long productId) {
+        // Trả "latest per header" gắn với productId
+        var headers = headerRepo.searchHeaders(null, productId, PageRequest.of(0, 500)).getContent();
+        if (headers.isEmpty()) return List.of();
+        var latest = formulaRepo.findLatestByHeaderIds(headers.stream().map(FormulaHeader::getId).toList());
+        return latest.stream().map(mapper::toDto).toList();
+    }
+
+    @Override
+    @Transactional
+    @Auditable(action = AuditAction.UPDATE, entityName = "ProductFormula", description = "Kích hoạt công thức (1 header chỉ 1 active)")
     public void activateFormula(Long formulaId) {
         ProductFormula f = formulaRepo.findById(formulaId)
                 .orElseThrow(() -> new DataExistException("Công thức không tồn tại"));
+        if (f.getHeader() == null) throw new DataExistException("Công thức chưa gắn header");
 
-        var list = formulaRepo.findByProductIdWithProductOrderByCreatedDateDesc(f.getProduct().getId());
-        for (ProductFormula x : list) {
-            x.setIsActive(x.getId().equals(f.getId()));
-        }
-        formulaRepo.saveAll(list);
+        // Đặt active cho bản hiện tại, hạ các bản khác
+        f.setIsActive(true);
+        formulaRepo.save(f);
+        formulaRepo.deactivateOthers(f.getHeader().getId(), f.getId());
     }
 
     @Override
@@ -227,10 +363,6 @@ public class ProductFormulaServiceImpl implements ProductFormulaService {
     @Auditable(action = AuditAction.DELETE, entityName = "ProductFormula", description = "Xóa công thức sản phẩm")
     public void deleteFormula(Long formulaId) {
         formulaRepo.deleteById(formulaId);
-    }
-
-    private static String emptyToNull(String s) {
-        return (s == null || s.isBlank()) ? null : s.trim();
     }
 
     @Override
@@ -254,16 +386,25 @@ public class ProductFormulaServiceImpl implements ProductFormulaService {
         Page<ProductFormula> page = getAllFormulas(param, pageRequest);
 
         var rows = page.getContent().stream().map(f -> {
-            var p = f.getProduct();
+            // Lấy product đại diện từ header.products (nếu có)
+            Product rep = pickFirstProduct(f);
+            Long productId = rep != null ? rep.getId() : null;
+            String productCode = rep != null ? rep.getProductCode() : null;
+            String productName = rep != null ? rep.getProductName() : null;
+            var productCategory = rep != null ? rep.getProductCategory() : null;
+            var formulationType = rep != null ? rep.getFormulationType() : null;
+
             long total = (f.getFormulaItems() == null) ? 0 : f.getFormulaItems().size();
             long critical = (f.getFormulaItems() == null) ? 0 :
                     f.getFormulaItems().stream().filter(it -> Boolean.TRUE.equals(it.getIsCritical())).count();
 
             return new ProductFormulaListRow(
                     f.getId(),
-                    p.getId(),
-                    p.getProductCode(),
-                    p.getProductName(),
+                    (f.getHeader() != null ? f.getHeader().getFormulaCode() : null),
+                    (f.getHeader() != null ? f.getHeader().getFormulaName() : null),
+                    productId,
+                    productCode,
+                    productName,
                     f.getVersion(),
                     f.getIsActive(),
                     f.getBatchSize(),
@@ -271,16 +412,19 @@ public class ProductFormulaServiceImpl implements ProductFormulaService {
                     critical,
                     f.getCreatedDate(),
                     f.getCreatedBy(),
-                    p.getBrandName(),
-                    p.getProductCategory(),
-                    p.getFormulationType()
+                    productCategory,
+                    formulationType
             );
         }).toList();
 
         return new PageImpl<>(rows, page.getPageable(), page.getTotalElements());
     }
 
-    // ===== Helpers =====
+    /* ============================ HELPERS ============================ */
+
+    private static String emptyToNull(String s) {
+        return (s == null || s.isBlank()) ? null : s.trim();
+    }
 
     static BigDecimal round1(BigDecimal v) {
         return v == null ? null : v.setScale(1, RoundingMode.HALF_UP);
@@ -291,12 +435,38 @@ public class ProductFormulaServiceImpl implements ProductFormulaService {
         String u = (unit == null ? "mg" : unit.trim().toLowerCase());
         return switch (u) {
             case "mg" -> value;
-            case "g" -> value.multiply(BigDecimal.valueOf(1_000));
+            case "g"  -> value.multiply(BigDecimal.valueOf(1_000));
             case "kg" -> value.multiply(BigDecimal.valueOf(1_000_000));
-            default ->
-                    null;
+            default   -> null;
         };
     }
 
+    /**
+     * Extract base unit from compound unit string
+     * Examples: "mg/g" → "mg", "IU/g" → "IU", "%" → "%"
+     */
+    private static String extractFormulaUnit(String contentUnit) {
+        if (contentUnit == null || contentUnit.isBlank()) return "mg";
+        String unit = contentUnit.trim();
+        // Split by "/" and take first part
+        if (unit.contains("/")) {
+            return unit.split("/")[0].trim();
+        }
+        return unit;
+    }
 
+    private static Product pickFirstProduct(ProductFormula f) {
+        if (f == null || f.getHeader() == null || f.getHeader().getProducts() == null) return null;
+        return f.getHeader().getProducts().stream().findFirst().orElse(null);
+    }
+
+    @Override
+    @Transactional
+    public List<ProductFormulaDto> getCatalogLatest(String q, Long productId, int start, int limit) {
+        var headersPage = headerRepo.searchHeaders(q, productId, PageRequest.of(start, limit));
+        var headerIds = headersPage.getContent().stream().map(FormulaHeader::getId).toList();
+        if (headerIds.isEmpty()) return List.of();
+        var latest = formulaRepo.findLatestByHeaderIdsWithItemsAndProducts(headerIds);
+        return latest.stream().map(mapper::toDto).toList();
+    }
 }
